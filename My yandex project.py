@@ -129,6 +129,9 @@ class FirstWindow(QMainWindow):
         self.clock_4.setIcon(QtGui.QIcon('images/PlusButton.jpg'))
 
         self.clock_1.setIconSize(QSize(250, 250))
+        self.clock_2.setIconSize(QSize(250, 250))
+        self.clock_3.setIconSize(QSize(250, 250))
+        self.clock_4.setIconSize(QSize(250, 250))
 
         self.clock_1.setFlat(True)
         self.clock_2.setFlat(True)
@@ -239,10 +242,10 @@ class MyButton(QPushButton):
         self.setMouseTracking(True)
 
     def enterEvent(self, event):
-        print('yes')
+        pass
 
     def leaveEvent(self, event):
-        print('noo')
+        pass
 
 
 if __name__ == '__main__':
