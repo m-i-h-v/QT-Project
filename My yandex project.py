@@ -1,7 +1,7 @@
 import sys
 
 from PyQt5 import uic, QtGui
-from PyQt5.QtCore import QTimer, Qt, QEvent
+from PyQt5.QtCore import QTimer, Qt, QEvent, QSize
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QWidget, QApplication, QAbstractButton, QMainWindow, QToolButton
 from PyQt5.QtWidgets import QLineEdit, QCheckBox, QLabel, QPushButton, QPlainTextEdit
@@ -108,10 +108,15 @@ class FirstWindow(QMainWindow):
                                        '3': self.Settings_clock_3,
                                        '4': self.Settings_clock_4}
 
-        self.clock_1 = MyButton(self)
-        self.clock_2 = MyButton(self)
-        self.clock_3 = MyButton(self)
-        self.clock_4 = MyButton(self)
+        self.clock_1 = MyButton()
+        self.clock_2 = MyButton()
+        self.clock_3 = MyButton()
+        self.clock_4 = MyButton()
+
+        self.clock_1.setObjectName('clock_1')
+        self.clock_2.setObjectName('clock_2')
+        self.clock_3.setObjectName('clock_3')
+        self.clock_4.setObjectName('clock_4')
 
         self.add_clock_layout.addWidget(self.clock_1)
         self.add_clock_layout.addWidget(self.clock_2)
@@ -122,6 +127,8 @@ class FirstWindow(QMainWindow):
         self.clock_2.setIcon(QtGui.QIcon('images/PlusButton.jpg'))
         self.clock_3.setIcon(QtGui.QIcon('images/PlusButton.jpg'))
         self.clock_4.setIcon(QtGui.QIcon('images/PlusButton.jpg'))
+
+        self.clock_1.setIconSize(QSize(250, 250))
 
         self.clock_1.setFlat(True)
         self.clock_2.setFlat(True)
@@ -144,6 +151,7 @@ class FirstWindow(QMainWindow):
 
     def add_clock(self):
         self.name = self.sender().objectName()
+        print(self.name)
         self.button = self.sender()
         self.add_clock_window = AddClock(self)
         self.add_clock_window.show()
@@ -226,8 +234,8 @@ class AddClock(QWidget):
 
 
 class MyButton(QPushButton):
-    def __init__(self, parent=None):
-        super().__init__(parent)
+    def __init__(self):
+        super().__init__()
         self.setMouseTracking(True)
 
     def enterEvent(self, event):
