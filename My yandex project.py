@@ -154,7 +154,6 @@ class FirstWindow(QMainWindow):
 
     def add_clock(self):
         self.name = self.sender().objectName()
-        print(self.name)
         self.button = self.sender()
         self.add_clock_window = AddClock(self)
         self.add_clock_window.show()
@@ -242,10 +241,10 @@ class MyButton(QPushButton):
         self.setMouseTracking(True)
 
     def enterEvent(self, event):
-        pass
+        QApplication.setOverrideCursor(Qt.PointingHandCursor)
 
     def leaveEvent(self, event):
-        pass
+        QApplication.restoreOverrideCursor()
 
 
 if __name__ == '__main__':
