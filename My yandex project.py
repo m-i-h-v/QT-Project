@@ -102,10 +102,10 @@ class FirstWindow(QMainWindow):
         self.add_clock_layout_3_2.insertWidget(1, self.Delete_clock_3)
         self.add_clock_layout_4_2.insertWidget(1, self.Delete_clock_4)
 
-        self.Settings_clock_1.setIcon(QtGui.QIcon('images/SettingsButton.jpg'))
-        self.Settings_clock_2.setIcon(QtGui.QIcon('images/SettingsButton.jpg'))
-        self.Settings_clock_3.setIcon(QtGui.QIcon('images/SettingsButton.jpg'))
-        self.Settings_clock_4.setIcon(QtGui.QIcon('images/SettingsButton.jpg'))
+        self.Settings_clock_1.setIcon(QtGui.QIcon('images/SettingsButton.png'))
+        self.Settings_clock_2.setIcon(QtGui.QIcon('images/SettingsButton.png'))
+        self.Settings_clock_3.setIcon(QtGui.QIcon('images/SettingsButton.png'))
+        self.Settings_clock_4.setIcon(QtGui.QIcon('images/SettingsButton.png'))
 
         self.Settings_clock_1.setHidden(True)
         self.Settings_clock_2.setHidden(True)
@@ -157,10 +157,10 @@ class FirstWindow(QMainWindow):
         self.add_clock_layout_3.insertWidget(0, self.clock_3)
         self.add_clock_layout_4.insertWidget(0, self.clock_4)
 
-        self.clock_1.setIcon(QtGui.QIcon('images/PlusButton.jpg'))
-        self.clock_2.setIcon(QtGui.QIcon('images/PlusButton.jpg'))
-        self.clock_3.setIcon(QtGui.QIcon('images/PlusButton.jpg'))
-        self.clock_4.setIcon(QtGui.QIcon('images/PlusButton.jpg'))
+        self.clock_1.setIcon(QtGui.QIcon('images/PlusButton.png'))
+        self.clock_2.setIcon(QtGui.QIcon('images/PlusButton.png'))
+        self.clock_3.setIcon(QtGui.QIcon('images/PlusButton.png'))
+        self.clock_4.setIcon(QtGui.QIcon('images/PlusButton.png'))
 
         self.clock_1.setIconSize(QSize(250, 250))
         self.clock_2.setIconSize(QSize(250, 250))
