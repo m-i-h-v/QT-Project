@@ -3,7 +3,7 @@ import sys
 from PyQt5 import uic, QtGui
 from PyQt5.QtCore import QTimer, Qt, QEvent, QSize
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QWidget, QApplication, QAbstractButton, QMainWindow, QToolButton
+from PyQt5.QtWidgets import QWidget, QApplication, QAbstractButton, QMainWindow, QToolButton, QHBoxLayout
 from PyQt5.QtWidgets import QLineEdit, QCheckBox, QLabel, QPushButton, QPlainTextEdit
 import requests
 from PyQt5.uic.properties import QtCore
@@ -73,6 +73,35 @@ class FirstWindow(QMainWindow):
         self.clock_faces['3'] = self.clock_face_3
         self.clock_faces['4'] = self.clock_face_4
 
+        self.Settings_clock_1 = MyButton()
+        self.Settings_clock_2 = MyButton()
+        self.Settings_clock_3 = MyButton()
+        self.Settings_clock_4 = MyButton()
+
+        self.Settings_clock_1.setFlat(True)
+        self.Settings_clock_2.setFlat(True)
+        self.Settings_clock_3.setFlat(True)
+        self.Settings_clock_4.setFlat(True)
+
+        self.Delete_clock_1 = MyButton()
+        self.Delete_clock_2 = MyButton()
+        self.Delete_clock_3 = MyButton()
+        self.Delete_clock_4 = MyButton()
+
+        self.Delete_clock_1.setFlat(True)
+        self.Delete_clock_2.setFlat(True)
+        self.Delete_clock_3.setFlat(True)
+        self.Delete_clock_4.setFlat(True)
+
+        self.add_clock_layout_1_2.insertWidget(0, self.Settings_clock_1)
+        self.add_clock_layout_2_2.insertWidget(0, self.Settings_clock_2)
+        self.add_clock_layout_3_2.insertWidget(0, self.Settings_clock_3)
+        self.add_clock_layout_4_2.insertWidget(0, self.Settings_clock_4)
+        self.add_clock_layout_1_2.insertWidget(1, self.Delete_clock_1)
+        self.add_clock_layout_2_2.insertWidget(1, self.Delete_clock_2)
+        self.add_clock_layout_3_2.insertWidget(1, self.Delete_clock_3)
+        self.add_clock_layout_4_2.insertWidget(1, self.Delete_clock_4)
+
         self.Settings_clock_1.setIcon(QtGui.QIcon('images/SettingsButton.jpg'))
         self.Settings_clock_2.setIcon(QtGui.QIcon('images/SettingsButton.jpg'))
         self.Settings_clock_3.setIcon(QtGui.QIcon('images/SettingsButton.jpg'))
@@ -108,6 +137,11 @@ class FirstWindow(QMainWindow):
                                        '3': self.Settings_clock_3,
                                        '4': self.Settings_clock_4}
 
+        self.clock_layouts = {'1': self.add_clock_layout_1,
+                              '2': self.add_clock_layout_2,
+                              '3': self.add_clock_layout_3,
+                              '4': self.add_clock_layout_4}
+
         self.clock_1 = MyButton()
         self.clock_2 = MyButton()
         self.clock_3 = MyButton()
@@ -118,10 +152,10 @@ class FirstWindow(QMainWindow):
         self.clock_3.setObjectName('clock_3')
         self.clock_4.setObjectName('clock_4')
 
-        self.add_clock_layout.addWidget(self.clock_1)
-        self.add_clock_layout.addWidget(self.clock_2)
-        self.add_clock_layout.addWidget(self.clock_3)
-        self.add_clock_layout.addWidget(self.clock_4)
+        self.add_clock_layout_1.insertWidget(0, self.clock_1)
+        self.add_clock_layout_2.insertWidget(0, self.clock_2)
+        self.add_clock_layout_3.insertWidget(0, self.clock_3)
+        self.add_clock_layout_4.insertWidget(0, self.clock_4)
 
         self.clock_1.setIcon(QtGui.QIcon('images/PlusButton.jpg'))
         self.clock_2.setIcon(QtGui.QIcon('images/PlusButton.jpg'))
@@ -172,8 +206,8 @@ class FirstWindow(QMainWindow):
     def delete_clock(self):
         num = self.sender().objectName()[-1]
         self.clocks[int(num) - 1] = None
-        self.add_clock_layout.replaceWidget(
-                                            self.add_clock_layout.itemAt(int(num) - 1).widget(),
+        self.clock_layouts[num].replaceWidget(
+                                            self.clock_layouts[num].itemAt(0).widget(),
                                             self.clock_buttons[int(num) - 1])
         self.clock_faces[num].setHidden(True)
         self.clock_buttons[int(num) - 1].setHidden(False)
@@ -218,8 +252,8 @@ class AddClock(QWidget):
                 sign = self.TimeZoneComboBox.currentText()[3]
                 timezone = self.TimeZoneComboBox.currentText()[3:].split(':')
                 timezone = [int(timezone[0]), 0 if len(timezone) == 1 else int(sign + timezone[1])]
-                self.other.add_clock_layout.replaceWidget(
-                                                          self.other.add_clock_layout.itemAt(int(num) - 1).widget(),
+                self.other.clock_layouts[num].replaceWidget(
+                                                          self.other.clock_layouts[num].itemAt(0).widget(),
                                                           self.other.clock_faces[self.other.name[-1]])
                 self.other.button.setHidden(True)
                 self.other.clock_faces[self.other.name[-1]].setHidden(False)
