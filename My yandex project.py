@@ -53,6 +53,8 @@ class FirstWindow(QMainWindow):
 #        self.current_time = list(time)
         self.current_time = [0, 0, 0]
 
+        self.alarm_clocks_button.clicked.connect(self.alarm_clocks)
+
         self.clocks = [None, None, None, None]
         self.clock_faces = {}
 
@@ -184,7 +186,7 @@ class FirstWindow(QMainWindow):
 
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_time)
-        self.timer.start(1000)
+        self.timer.start(993)
 
     def add_clock(self):
         self.name = self.sender().objectName()
@@ -215,6 +217,9 @@ class FirstWindow(QMainWindow):
         self.delete_clock_buttons[num].setHidden(True)
 
     def clock_settings(self):
+        pass
+
+    def alarm_clocks(self):
         pass
 
 
@@ -268,7 +273,6 @@ class AddClock(QWidget):
         self.close()
 
 
-
 class MyButton(QPushButton):
     def __init__(self):
         super().__init__()
@@ -279,6 +283,13 @@ class MyButton(QPushButton):
 
     def leaveEvent(self, event):
         QApplication.restoreOverrideCursor()
+
+
+class AlarmClocks(QWidget):
+    def __init__(self, other):
+        super().__init__()
+        uic.loadUi('Ui/AlarmClocksUi.ui')
+        self.other = other
 
 
 if __name__ == '__main__':
