@@ -17,6 +17,12 @@ class Clock:
         self.seconds, self.minutes, self.coefficient = seconds, minutes, coefficient
         self.num = num
 
+    def add_changes(self, new_type, new_timezone):
+        self.clock_type = new_type
+        sign = new_timezone[3]
+        timezone = new_timezone[3:].split(':')
+        self.timezone = [int(timezone[0]), 0 if len(timezone) == 1 else int(sign + timezone[1])]
+
     def update_clock(self):
         time = self.other.current_time
         time = [time[0], time[1], time[2]]
@@ -53,12 +59,12 @@ class FirstWindow(QMainWindow):
 #        self.current_time = list(time)
         self.current_time = [0, 0, 0]
 
-        self.alarm_clocks_button.clicked.connect(self.alarm_clocks)
+        self.alarm_clock_button.clicked.connect(self.alarm_clocks)
 
         self.clocks = [None, None, None, None]
         self.clock_faces = {}
 
-        self.clock_face_1 = QLabel('lol', self)
+        self.clock_face_1 = QLabel(self)
         self.clock_face_1.setHidden(True)
 
         self.clock_face_2 = QLabel(self)
@@ -79,6 +85,11 @@ class FirstWindow(QMainWindow):
         self.Settings_clock_2 = MyButton()
         self.Settings_clock_3 = MyButton()
         self.Settings_clock_4 = MyButton()
+
+        self.Settings_clock_1.setObjectName('ClockSettings_1')
+        self.Settings_clock_2.setObjectName('ClockSettings_2')
+        self.Settings_clock_3.setObjectName('ClockSettings_3')
+        self.Settings_clock_4.setObjectName('ClockSettings_4')
 
         self.Settings_clock_1.setFlat(True)
         self.Settings_clock_2.setFlat(True)
@@ -123,6 +134,21 @@ class FirstWindow(QMainWindow):
         self.Delete_clock_2.setHidden(True)
         self.Delete_clock_3.setHidden(True)
         self.Delete_clock_4.setHidden(True)
+
+        self.Delete_clock_1.setIconSize(QSize(25, 25))
+        self.Delete_clock_2.setIconSize(QSize(25, 25))
+        self.Delete_clock_3.setIconSize(QSize(25, 25))
+        self.Delete_clock_4.setIconSize(QSize(25, 25))
+
+        self.Settings_clock_1.setIconSize(QSize(25, 25))
+        self.Settings_clock_2.setIconSize(QSize(25, 25))
+        self.Settings_clock_3.setIconSize(QSize(25, 25))
+        self.Settings_clock_4.setIconSize(QSize(25, 25))
+
+        self.Delete_clock_1.setObjectName('DeleteClock_1')
+        self.Delete_clock_2.setObjectName('DeleteClock_2')
+        self.Delete_clock_3.setObjectName('DeleteClock_3')
+        self.Delete_clock_4.setObjectName('DeleteClock_4')
 
         self.Delete_clock_1.clicked.connect(self.delete_clock)
         self.Delete_clock_2.clicked.connect(self.delete_clock)
@@ -217,7 +243,9 @@ class FirstWindow(QMainWindow):
         self.delete_clock_buttons[num].setHidden(True)
 
     def clock_settings(self):
-        pass
+        self.clock_settings_window = ClockSettings(self, int(self.sender().objectName()[-1]))
+        self.clock_settings_window.show()
+
 
     def alarm_clocks(self):
         pass
@@ -288,8 +316,34 @@ class MyButton(QPushButton):
 class AlarmClocks(QWidget):
     def __init__(self, other):
         super().__init__()
-        uic.loadUi('Ui/AlarmClocksUi.ui')
+        uic.loadUi('Ui/AlarmClocksUi.ui', self)
         self.other = other
+
+
+class ClockSettings(QWidget):
+    def __init__(self, other, num):
+        super().__init__()
+        uic.loadUi('Ui/ClockSettingsUi.ui', self)
+
+        self.CancelButton.clicked.connect(self.cancel)
+        self.OkButton.clicked.connect(self.apply_changes)
+        self.other, self.num = other, num - 1
+
+    def apply_changes(self):
+        type = 'analog' if self.AnalogRadioButton.isChecked() else 'digit'
+        tz = self.TimeZoneComboBox.currentText()
+        self.other.clocks[self.num].add_changes(type, tz)
+        self.close()
+
+    def cancel(self):
+        self.close()
+
+    def keyPressEvent(self, event):
+        key = event.key()
+        if key == Qt.Key_Escape:
+            self.close()
+        elif key == 16777220:
+            self.apply_changes()
 
 
 if __name__ == '__main__':
