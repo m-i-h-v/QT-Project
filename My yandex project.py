@@ -324,15 +324,15 @@ class AlarmClocks(QWidget):
         self.other = other
         uic.loadUi('Ui/AlarmClocksUi.ui', self)
 
-        connection = sqlite3.connect('database/alarm_clocks.sqlite')
-        cursor = connection.cursor()
+        self.connection = sqlite3.connect('database/alarm_clocks.sqlite')
+        self.cursor = self.connection.cursor()
 
-        data = cursor.execute("""SELECT * from alarm_clocks""").fetchall()
+        self.data = self.cursor.execute("""SELECT * from alarm_clocks""").fetchall()
 
         self.TableWidget.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
         self.TableWidget.setColumnCount(7)
-        self.TableWidget.setRowCount(len(data) + 1)
+        self.TableWidget.setRowCount(len(self.data) + 1)
 
         self.TableWidget.setSpan(0, 5, 1, 2)
 
@@ -359,16 +359,39 @@ class AlarmClocks(QWidget):
         button.setFlat(True)
         self.TableWidget.setCellWidget(0, 5, button)
 
-        for num, elem in enumerate(data):
+        for num, elem in enumerate(self.data):
             btn_1, btn_2 = MyButton('Изменить'), MyButton('Удалить')
             btn_1.setFlat(True)
             btn_2.setFlat(True)
+#            time = [int(elem[1].split(':')[0], int(elem[1].split(':')[1]))]
+#            tz, sign = elem[3][3:].split(':'), '-' if elem[3][4] == '+' else '+'
+#            timezone = [int(tz[0]), 0 if len(tz) == 1 else int(sign + tz[1])]
+#            time[0] = (time[0] + timezone[0] + (time[1] + timezone[1]) // 60) % 24
+#            time[1] = (time[1] + timezone[1]) % 60
+            btn_1.setObjectName(f'ChangeButton{elem[5]}')
+            btn_2.setObjectName(f'DeleteButton{elem[5]}')
+            btn_1.clicked.connect(self.change_alarm_clocks)
+            btn_2.clicked.connect(self.delete_alarm_clocks)
             self.TableWidget.setCellWidget(num + 1, 5, btn_1)
             self.TableWidget.setCellWidget(num + 1, 6, btn_2)
-            for num_, elem_ in enumerate(elem):
+            for num_, elem_ in enumerate(elem[:5]):
                 item = QTableWidgetItem(elem_)
                 item.setFlags(Qt.ItemIsEnabled)
                 self.TableWidget.setItem(num + 1, num_, item)
+
+    def change_alarm_clocks(self):
+        change_alarm_clock_window = ChangeAlarmClock()
+        change_alarm_clock_window.show()
+
+    def delete_alarm_clocks(self):
+        name = self.sender().objectName()[12:]
+        data = self.cursor.execute("""SELECT * FROM alarm_clocks
+                                      WHERE 'UTC+0' = ?""", (name,)).fetchone()
+        num = self.data.index(data)
+        del self.data[num]
+        self.TableWidget.removeRow(num)
+        self.cursor.execute("DELETE from alarm_clocks WHERE 'UTC+0' = ?", (name,))
+        self.connection.commit()
 
 
 class ClockSettings(QWidget):
@@ -395,6 +418,12 @@ class ClockSettings(QWidget):
             self.close()
         elif key == 16777220:
             self.apply_changes()
+
+
+class ChangeAlarmClock(QWidget):
+    def __init__(self):
+        super().__init__()
+        uic.loadUi('Ui/ChangeAlarmClockUi.ui')
 
 
 if __name__ == '__main__':
