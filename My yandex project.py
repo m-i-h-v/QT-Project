@@ -6,7 +6,7 @@ from PyQt5.QtCore import QTimer, Qt, QEvent, QSize
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtSql import QSqlDatabase, QSqlTableModel
 from PyQt5.QtWidgets import QWidget, QApplication, QAbstractButton, QMainWindow, QToolButton, QHBoxLayout, QGridLayout, \
-    QScrollArea, QVBoxLayout, QTableWidgetItem, QTableWidget, QHeaderView
+    QScrollArea, QVBoxLayout, QTableWidgetItem, QTableWidget, QHeaderView, QInputDialog
 from PyQt5.QtWidgets import QLineEdit, QCheckBox, QLabel, QPushButton, QPlainTextEdit
 import requests
 from PyQt5.uic.properties import QtCore, QtWidgets
@@ -261,6 +261,8 @@ class AddClock(QWidget):
         uic.loadUi('Ui/AddClock.ui', self)
         self.other = other
 
+        self.setWindowModality(Qt.ApplicationModal)
+
         self.Label_1.setHidden(True)
         self.Label_2.setHidden(True)
 
@@ -368,8 +370,8 @@ class AlarmClocks(QWidget):
 #            timezone = [int(tz[0]), 0 if len(tz) == 1 else int(sign + tz[1])]
 #            time[0] = (time[0] + timezone[0] + (time[1] + timezone[1]) // 60) % 24
 #            time[1] = (time[1] + timezone[1]) % 60
-            btn_1.setObjectName(f'ChangeButton{elem[5]}')
-            btn_2.setObjectName(f'DeleteButton{elem[5]}')
+            btn_1.setObjectName(f'ChangeButton{elem[5]};{elem[3]}')
+            btn_2.setObjectName(f'DeleteButton{elem[5]};{elem[3]}')
             btn_1.clicked.connect(self.change_alarm_clocks)
             btn_2.clicked.connect(self.delete_alarm_clocks)
             self.TableWidget.setCellWidget(num + 1, 5, btn_1)
@@ -384,20 +386,20 @@ class AlarmClocks(QWidget):
         change_alarm_clock_window.show()
 
     def delete_alarm_clocks(self):
-        name = self.sender().objectName()[12:]
+        self.answer = None
+        name = self.sender().objectName()[12:].split(';')
         data = self.cursor.execute("""SELECT * FROM alarm_clocks
-                                      WHERE 'UTC+0' = ?""", (name,)).fetchone()
-        num = self.data.index(data)
-        del self.data[num]
-        self.TableWidget.removeRow(num)
-        self.cursor.execute("DELETE from alarm_clocks WHERE 'UTC+0' = ?", (name,))
-        self.connection.commit()
+                                      WHERE universal_time = ? AND timezone = ?""", (name[0], name[1])).fetchone()
+        self.dialog = DeleteDialog(self, data, name)
+        self.dialog.show()
 
 
 class ClockSettings(QWidget):
     def __init__(self, other, num):
         super().__init__()
         uic.loadUi('Ui/ClockSettingsUi.ui', self)
+
+        self.setWindowModality(Qt.ApplicationModal)
 
         self.CancelButton.clicked.connect(self.cancel)
         self.OkButton.clicked.connect(self.apply_changes)
@@ -423,7 +425,34 @@ class ClockSettings(QWidget):
 class ChangeAlarmClock(QWidget):
     def __init__(self):
         super().__init__()
-        uic.loadUi('Ui/ChangeAlarmClockUi.ui')
+        uic.loadUi('Ui/ChangeAlarmClockUi.ui', self)
+
+
+class DeleteDialog(QWidget):
+    def __init__(self, other, data, name):
+        super().__init__()
+        uic.loadUi('Ui/DeleteDialogUi.ui', self)
+        self.setWindowModality(Qt.ApplicationModal)
+
+        self.other, self.data, self.name = other, data, name
+
+        self.NameLabel.setText(f'Вы действительно хотите удалить будильник {data[0]},')
+        self.TimeLabel.setText(f'установленный на {data[1]}?')
+
+        self.DeleteButton.clicked.connect(self.confirm)
+        self.CancelButton.clicked.connect(self.cancel)
+
+    def confirm(self):
+        num = self.other.data.index(self.data)
+        del self.other.data[num]
+        self.other.TableWidget.removeRow(num + 1)
+        self.other.cursor.execute("DELETE from alarm_clocks "
+                                  "WHERE universal_time = ? AND timezone = ?", (self.name[0], self.name[1]))
+        self.other.connection.commit()
+        self.close()
+
+    def cancel(self):
+        self.close()
 
 
 if __name__ == '__main__':
