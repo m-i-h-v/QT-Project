@@ -1,12 +1,15 @@
+import sqlite3
 import sys
 
 from PyQt5 import uic, QtGui
 from PyQt5.QtCore import QTimer, Qt, QEvent, QSize
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QWidget, QApplication, QAbstractButton, QMainWindow, QToolButton, QHBoxLayout
+from PyQt5.QtSql import QSqlDatabase, QSqlTableModel
+from PyQt5.QtWidgets import QWidget, QApplication, QAbstractButton, QMainWindow, QToolButton, QHBoxLayout, QGridLayout, \
+    QScrollArea, QVBoxLayout, QTableWidgetItem, QTableWidget, QHeaderView
 from PyQt5.QtWidgets import QLineEdit, QCheckBox, QLabel, QPushButton, QPlainTextEdit
 import requests
-from PyQt5.uic.properties import QtCore
+from PyQt5.uic.properties import QtCore, QtWidgets
 from bs4 import BeautifulSoup
 import datetime as dt
 
@@ -248,7 +251,8 @@ class FirstWindow(QMainWindow):
 
 
     def alarm_clocks(self):
-        pass
+        self.alarm_clocks_window = AlarmClocks(self)
+        self.alarm_clocks_window.showMaximized()
 
 
 class AddClock(QWidget):
@@ -302,9 +306,10 @@ class AddClock(QWidget):
 
 
 class MyButton(QPushButton):
-    def __init__(self):
+    def __init__(self, text=''):
         super().__init__()
         self.setMouseTracking(True)
+        self.setText(text)
 
     def enterEvent(self, event):
         QApplication.setOverrideCursor(Qt.PointingHandCursor)
@@ -316,8 +321,54 @@ class MyButton(QPushButton):
 class AlarmClocks(QWidget):
     def __init__(self, other):
         super().__init__()
-        uic.loadUi('Ui/AlarmClocksUi.ui', self)
         self.other = other
+        uic.loadUi('Ui/AlarmClocksUi.ui', self)
+
+        connection = sqlite3.connect('database/alarm_clocks.sqlite')
+        cursor = connection.cursor()
+
+        data = cursor.execute("""SELECT * from alarm_clocks""").fetchall()
+
+        self.TableWidget.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+
+        self.TableWidget.setColumnCount(7)
+        self.TableWidget.setRowCount(len(data) + 1)
+
+        self.TableWidget.setSpan(0, 5, 1, 2)
+
+        self.TableWidget.horizontalHeader().setVisible(False)
+        self.TableWidget.verticalHeader().setVisible(False)
+
+        item = QTableWidgetItem('Название')
+        item.setFlags(Qt.ItemIsEnabled)
+        self.TableWidget.setItem(0, 0, item)
+        item = QTableWidgetItem('Время')
+        item.setFlags(Qt.ItemIsEnabled)
+        self.TableWidget.setItem(0, 1, item)
+        item = QTableWidgetItem('Повторять')
+        item.setFlags(Qt.ItemIsEnabled)
+        self.TableWidget.setItem(0, 2, item)
+        item = QTableWidgetItem('Часовой пояс')
+        item.setFlags(Qt.ItemIsEnabled)
+        self.TableWidget.setItem(0, 3, item)
+        item = QTableWidgetItem('Режим')
+        item.setFlags(Qt.ItemIsEnabled)
+        self.TableWidget.setItem(0, 4, item)
+
+        button = MyButton('Добавить')
+        button.setFlat(True)
+        self.TableWidget.setCellWidget(0, 5, button)
+
+        for num, elem in enumerate(data):
+            btn_1, btn_2 = MyButton('Изменить'), MyButton('Удалить')
+            btn_1.setFlat(True)
+            btn_2.setFlat(True)
+            self.TableWidget.setCellWidget(num + 1, 5, btn_1)
+            self.TableWidget.setCellWidget(num + 1, 6, btn_2)
+            for num_, elem_ in enumerate(elem):
+                item = QTableWidgetItem(elem_)
+                item.setFlags(Qt.ItemIsEnabled)
+                self.TableWidget.setItem(num + 1, num_, item)
 
 
 class ClockSettings(QWidget):
