@@ -359,17 +359,13 @@ class AlarmClocks(QWidget):
 
         button = MyButton('Добавить')
         button.setFlat(True)
+        button.clicked.connect(self.add_alarm_clock)
         self.TableWidget.setCellWidget(0, 5, button)
 
         for num, elem in enumerate(self.data):
             btn_1, btn_2 = MyButton('Изменить'), MyButton('Удалить')
             btn_1.setFlat(True)
             btn_2.setFlat(True)
-#            time = [int(elem[1].split(':')[0], int(elem[1].split(':')[1]))]
-#            tz, sign = elem[3][3:].split(':'), '-' if elem[3][4] == '+' else '+'
-#            timezone = [int(tz[0]), 0 if len(tz) == 1 else int(sign + tz[1])]
-#            time[0] = (time[0] + timezone[0] + (time[1] + timezone[1]) // 60) % 24
-#            time[1] = (time[1] + timezone[1]) % 60
             btn_1.setObjectName(f'ChangeButton{elem[5]};{elem[3]}')
             btn_2.setObjectName(f'DeleteButton{elem[5]};{elem[3]}')
             btn_1.clicked.connect(self.change_alarm_clocks)
@@ -381,9 +377,14 @@ class AlarmClocks(QWidget):
                 item.setFlags(Qt.ItemIsEnabled)
                 self.TableWidget.setItem(num + 1, num_, item)
 
+    def add_alarm_clock(self):
+        pass
+        self.add_new_alarm_clock = AddNewAlarmClock(self)
+        self.add_new_alarm_clock.show()
+
     def change_alarm_clocks(self):
-        change_alarm_clock_window = ChangeAlarmClock()
-        change_alarm_clock_window.show()
+        self.change_alarm_clock_window = ChangeAlarmClock()
+        self.change_alarm_clock_window.show()
 
     def delete_alarm_clocks(self):
         self.answer = None
@@ -452,6 +453,135 @@ class DeleteDialog(QWidget):
         self.close()
 
     def cancel(self):
+        self.close()
+
+
+class AddNewAlarmClock(QWidget):
+    def __init__(self, other):
+        super().__init__()
+        uic.loadUi('Ui/AddNewAlarmClockUi.ui', self)
+        self.setWindowModality(Qt.ApplicationModal)
+        self.other = other
+        self.week_days = {'MondayCheckBox': 'пн',
+                          'TuesdayCheckBox': 'вт',
+                          'WednesdayCheckBox': 'ср',
+                          'ThursdayCheckBox': 'чт',
+                          'FridayCheckBox': 'пт',
+                          'SaturdayCheckBox': 'сб',
+                          'SundayCheckBox': 'вс'}
+
+        self.AttentionLabel_1.setHidden(True)
+        self.AttentionLabel_2.setHidden(True)
+
+        self.SaveButton.clicked.connect(self.add_alarm_clock)
+        self.CancelButton.clicked.connect(self.cancel)
+
+    def cancel(self):
+        self.close()
+
+    def add_alarm_clock(self):
+        try:
+            if self.is_ok():
+                pass
+                self.check_boxes_help = [self.MondayCheckBox,
+                                          self.TuesdayCheckBox,
+                                          self.WednesdayCheckBox,
+                                          self.ThursdayCheckBox,
+                                          self.FridayCheckBox,
+                                          self.SaturdayCheckBox,
+                                          self.SundayCheckBox]
+                self.check_boxes = []
+
+                for check_box in self.check_boxes_help:
+                    if check_box.isChecked():
+                        self.check_boxes.append(check_box)
+
+                if len(self.check_boxes) != 0:
+                    self.check_boxes = map(lambda x: self.week_days[x.objectName()], self.check_boxes)
+                    self.check_boxes = ', '.join(self.check_boxes)
+                else:
+                    self.check_boxes = 'Нет'
+
+                values = (self.NameTextEdit.toPlainText(),
+                          self.time,
+                          self.check_boxes,
+                          self.TimezoneComboBox.currentText(),
+                          'Активен', self.universal_time)
+                self.other.data.append(values)
+
+                self.other.cursor.execute("""INSERT INTO alarm_clocks
+                                             VALUES (?, ?, ?, ?, ?, ?)""", values)
+                self.other.connection.commit()
+
+                row_count = self.other.TableWidget.rowCount()
+                self.other.TableWidget.insertRow(row_count)
+                for num, value in enumerate(values[:5]):
+                    item = QTableWidgetItem(value)
+                    item.setFlags(Qt.ItemIsEnabled)
+                    self.other.TableWidget.setItem(row_count, num, item)
+                btn_1, btn_2 = MyButton('Изменить'), MyButton('Удалить')
+                btn_1.setFlat(True)
+                btn_2.setFlat(True)
+                self.other.TableWidget.setCellWidget(row_count, 5, btn_1)
+                self.other.TableWidget.setCellWidget(row_count, 6, btn_2)
+                btn_1.setObjectName(f'ChangeButton{values[5]};{values[3]}')
+                btn_2.setObjectName(f'DeleteButton{values[5]};{values[3]}')
+                btn_1.clicked.connect(self.other.change_alarm_clocks)
+                btn_2.clicked.connect(self.other.delete_alarm_clocks)
+                self.close()
+
+        except AddAlarmClockNotEverythingIsSelected:
+            pass
+        except AlarmClockAlreadyExistsException:
+            self.setWindowModality(Qt.NonModal)
+            self.alarm_clock_exists = AlarmClockAlreadyExists(self)
+            self.alarm_clock_exists.show()
+
+
+    def is_ok(self):
+        if self.NameTextEdit.toPlainText() == '':
+            raise AddAlarmClockNotEverythingIsSelected(self)
+        elif self.TimezoneComboBox.currentText() == '...':
+            raise AddAlarmClockNotEverythingIsSelected(self)
+        timezone, universal_time = self.TimezoneComboBox.currentText()[3:], []
+        sign = '-' if timezone[0] == '+' else '+'
+        time = [int(self.HoursSpinBox.value()), int(self.MinutesSpinBox.value())]
+        self.time = ':'.join(map(str, time))
+        timezone = [int(sign + timezone.split(':')[0][1:]),
+                    0 if len(timezone.split(':')) == 1 else int(sign + timezone.split(':')[1])]
+        universal_time.append((time[0] + timezone[0] + (time[1] + timezone[1]) // 60) % 24)
+        universal_time.append((time[1] + timezone[1]) % 60)
+        self.universal_time = ':'.join(map(str, universal_time))
+        if len(self.other.cursor.execute("""SELECT * from alarm_clocks
+                                            WHERE timezone = ? AND universal_time = ?""", (self.TimezoneComboBox.currentText(), self.universal_time)).fetchall()):
+            raise AlarmClockAlreadyExistsException(self)
+        return True
+
+
+class AddAlarmClockNotEverythingIsSelected(Exception):
+    def __init__(self, other):
+        super().__init__()
+        other.AttentionLabel_1.setHidden(False)
+        other.AttentionLabel_2.setHidden(False)
+
+
+class AlarmClockAlreadyExistsException(Exception):
+    def __init__(self, other):
+        super().__init__()
+        other.AttentionLabel_1.setHidden(True)
+        other.AttentionLabel_2.setHidden(True)
+
+
+class AlarmClockAlreadyExists(QWidget):
+    def __init__(self, other):
+        super().__init__()
+        uic.loadUi('Ui/AlarmClockExistsUi.ui', self)
+        self.other = other
+        self.setWindowModality(Qt.ApplicationModal)
+        self.OkButton.clicked.connect(self.confirm)
+
+    def confirm(self):
+        self.other.setWindowModality(Qt.ApplicationModal)
         self.close()
 
 
