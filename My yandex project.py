@@ -1,9 +1,10 @@
+import math
 import sqlite3
 import sys
 
 from PyQt5 import uic, QtGui
-from PyQt5.QtCore import QTimer, Qt, QEvent, QSize
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtCore import QTimer, Qt, QEvent, QSize, QPoint, QLine
+from PyQt5.QtGui import QPixmap, QPainter, QColor, QPen
 from PyQt5.QtSql import QSqlDatabase, QSqlTableModel
 from PyQt5.QtWidgets import QWidget, QApplication, QAbstractButton, QMainWindow, QToolButton, QHBoxLayout, QGridLayout, \
     QScrollArea, QVBoxLayout, QTableWidgetItem, QTableWidget, QHeaderView, QInputDialog
@@ -15,32 +16,55 @@ import datetime as dt
 
 
 class Clock:
-    def __init__(self, other, type, timezone, num, seconds=None, minutes=True, coefficient=2):
+    def __init__(self, other, type, timezone, num, detail_coefficient=0, numbers=None):
         self.other, self.clock_type, self.timezone = other, type, timezone
-        self.seconds, self.minutes, self.coefficient = seconds, minutes, coefficient
-        self.num = num
+        self.detail_coefficient, self.num, self.numbers = detail_coefficient, num, numbers
+        self.paint_is_allowed = False if type == 'digit' else True
+        self.seconds_pos_1, self.seconds_pos_2 = 200, 200
+        self.minutes_pos_1, self.minutes_pos_2 = 200, 200
+        self.hours_pos_1, self.hours_pos_2 = 200, 200
+        if self.clock_type == 'analog':
+            if self.detail_coefficient == 0:
+                self.pixmap = QPixmap('images/ClockFace_1.png')
+            elif self.detail_coefficient == 1:
+                self.pixmap = QPixmap('images/ClockFace_2.png')
+            else:
+                self.pixmap = QPixmap('images/ClockFace_3.png')
+            self.other.clock_faces[self.num].setPixmap(self.pixmap)
 
     def add_changes(self, new_type, new_timezone):
         self.clock_type = new_type
+        self.paint_is_allowed = False if new_type == 'digit' else True
         sign = new_timezone[3]
         timezone = new_timezone[3:].split(':')
         self.timezone = [int(timezone[0]), 0 if len(timezone) == 1 else int(sign + timezone[1])]
 
     def update_clock(self):
         time = self.other.current_time
-        time = [time[0], time[1], time[2]]
-        time[0] = (time[0] + self.timezone[0] + (time[1] + self.timezone[1]) // 60) % 24
-        time[1] = (time[1] + self.timezone[1]) % 60
+        self.time = [time[0], time[1], time[2]]
+        self.time[0] = (time[0] + self.timezone[0] + (time[1] + self.timezone[1]) // 60) % 24
+        self.time[1] = (time[1] + self.timezone[1]) % 60
         if self.clock_type == 'analog':
-            self.draw_analog(time)
+            self.update_analog()
         else:
-            self.draw_digit(time)
+            self.update_digit()
 
-    def draw_analog(self, time):
-        self.other.clock_faces[self.num].setText('analog ' + ':'.join(map(str, time)))
+    def update_analog(self):
+        clock_face_coordinates = self.other.clock_faces[self.num].mapToGlobal(QPoint(0, 0))
+        self.clock_face_cord_x, self.clock_face_coord_y = clock_face_coordinates.x(), clock_face_coordinates.y()
+        hours, minutes, seconds = self.time
 
-    def draw_digit(self, time):
-        self.other.clock_faces[self.num].setText('digit ' + ':'.join(map(str, time)))
+        if self.detail_coefficient < 1:
+            self.seconds_pos_1 = 200 - int(130 * math.cos((90 + 6 * seconds) * math.pi / 180))
+            self.seconds_pos_2 = 200 - int(130 * math.sin((90 + 6 * seconds) * math.pi / 180))
+        if self.detail_coefficient < 2:
+            self.minutes_pos_1 = 200 - int(110 * math.cos((90 + 6 * minutes) * math.pi / 180))
+            self.minutes_pos_2 = 200 - int(110 * math.sin((90 + 6 * minutes) * math.pi / 180))
+        self.hours_pos_1 = 200 - int(85 * math.cos((90 + 30 * hours + minutes / 2) * math.pi / 180))
+        self.hours_pos_2 = 200 - int(85 * math.sin((90 + 30 * hours + minutes / 2) * math.pi / 180))
+
+    def update_digit(self):
+        self.other.clock_faces[self.num].setText('digit ' + ':'.join(map(str, self.time)))
 
 
 class AddClockNotEverythingIsSelected(Exception):
@@ -62,21 +86,33 @@ class FirstWindow(QMainWindow):
 #        self.current_time = list(time)
         self.current_time = [0, 0, 0]
 
+        self.analog_clock_face_1 = QPixmap('images/ClockFace_1.png')
+        self.analog_clock_face_2 = QPixmap('images/ClockFace_2.png')
+        self.analog_clock_face_3 = QPixmap('images/ClockFace_3.png')
+
+        self.analog_clock_faces = [self.analog_clock_face_1,
+                                   self.analog_clock_face_2,
+                                   self.analog_clock_face_3]
+
         self.alarm_clock_button.clicked.connect(self.alarm_clocks)
 
         self.clocks = [None, None, None, None]
         self.clock_faces = {}
 
         self.clock_face_1 = QLabel(self)
+        self.clock_face_1.resize(500, 500)
         self.clock_face_1.setHidden(True)
 
         self.clock_face_2 = QLabel(self)
+        self.clock_face_2.resize(500, 500)
         self.clock_face_2.setHidden(True)
 
         self.clock_face_3 = QLabel(self)
+        self.clock_face_3.resize(500, 500)
         self.clock_face_3.setHidden(True)
 
         self.clock_face_4 = QLabel(self)
+        self.clock_face_4.resize(500, 500)
         self.clock_face_4.setHidden(True)
 
         self.clock_faces['1'] = self.clock_face_1
@@ -217,6 +253,33 @@ class FirstWindow(QMainWindow):
         self.timer.timeout.connect(self.update_time)
         self.timer.start(993)
 
+    def paintEvent(self, event):
+        clock_hands_painter = QPainter()
+        for clock in self.clocks:
+            if clock is None:
+                continue
+            if clock.clock_type == 'analog':
+                if clock.detail_coefficient == 0:
+                    name = 'images/ClockFace_1'
+                if clock.detail_coefficient == 1:
+                    name = 'images/ClockFace_2'
+                if clock.detail_coefficient == 2:
+                    name = 'images/ClockFace_3'
+                pixmap = QPixmap(name)
+                clock_hands_painter.begin(pixmap)
+                self.draw_analog_clock(clock_hands_painter, clock)
+                clock_hands_painter.end()
+                self.clock_faces[clock.num].setPixmap(pixmap)
+
+    def draw_analog_clock(self, clock_hands_painter, clock):
+        clock_hands_painter.setPen(QPen(QColor(0, 0, 100), 4))
+        clock_hands_painter.drawLine(200, 200, clock.seconds_pos_1, clock.seconds_pos_2)
+        clock_hands_painter.setPen(QPen(QColor(0, 0, 100), 6))
+        clock_hands_painter.drawLine(200, 200, clock.minutes_pos_1, clock.minutes_pos_2)
+        clock_hands_painter.setPen(QPen(QColor(0, 0, 100), 8))
+        clock_hands_painter.drawLine(200, 200, clock.hours_pos_1, clock.hours_pos_2)
+
+
     def add_clock(self):
         self.name = self.sender().objectName()
         self.button = self.sender()
@@ -229,10 +292,14 @@ class FirstWindow(QMainWindow):
         new_min = (minute + (second + 1) // 60) % 60
         new_hour = (hour + (minute + (second + 1) // 60) // 60) % 24
         self.current_time = [new_hour, new_min, new_sec]
+        end = False
         for clock in self.clocks:
             if clock is None:
                 continue
+            end = True
             clock.update_clock()
+        if end:
+            self.repaint()
 
     def delete_clock(self):
         num = self.sender().objectName()[-1]
