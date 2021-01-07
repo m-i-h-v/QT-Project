@@ -18,7 +18,7 @@ import datetime as dt
 class Clock:
     def __init__(self, other, type, timezone, num, original_timezone, detail_coefficient=0, numbers=True, ):
         self.other, self.clock_type, self.timezone = other, type, timezone
-        self.original_timezone = original_timezone
+        self.original_timezone, self.time = original_timezone, [0, 0, 0]
         self.detail_coefficient, self.num, self.numbers = detail_coefficient, num, numbers
         self.paint_is_allowed = False if type == 'digit' else True
         self.seconds_pos_1, self.seconds_pos_2 = 200, 200
@@ -39,6 +39,10 @@ class Clock:
             self.pixmap.scaled(QSize(int(400 * self.other.coefficient_for_drawing),
                                      int(400 * self.other.coefficient_for_drawing)))
             self.other.clock_faces[self.num].setPixmap(self.pixmap)
+        else:
+            self.pixmap = QPixmap('images/Numbers/SimpleBackground.png')
+            self.pixmap.scaled(QSize(int(400 * self.other.coefficient_for_drawing),
+                                     int(400 * self.other.coefficient_for_drawing)))
 
     def add_changes(self, new_type, new_timezone, detail_coefficient, numbers):
         self.clock_type = new_type
@@ -56,12 +60,8 @@ class Clock:
         self.time[1] = (time[1] + self.timezone[1]) % 60
         if self.clock_type == 'analog':
             self.update_analog()
-        else:
-            self.update_digit()
 
     def update_analog(self):
-        clock_face_coordinates = self.other.clock_faces[self.num].mapToGlobal(QPoint(0, 0))
-        self.clock_face_cord_x, self.clock_face_coord_y = clock_face_coordinates.x(), clock_face_coordinates.y()
         hours, minutes, seconds = self.time
 
         self.seconds_pos_1 = int(200 * self.other.coefficient_for_drawing - 130 *
@@ -81,10 +81,6 @@ class Clock:
 
         self.hours_pos_2 = int(200 * self.other.coefficient_for_drawing - 85 * self.other.coefficient_for_drawing *
                                math.sin((90 + 30 * hours + minutes / 2) * math.pi / 180))
-
-    def update_digit(self):
-
-        self.other.clock_faces[self.num].setText('digit ' + ':'.join(map(str, self.time)))
 
 
 class AddClockNotEverythingIsSelected(Exception):
@@ -194,10 +190,10 @@ class FirstWindow(QMainWindow):
         self.Delete_clock_3.setHidden(True)
         self.Delete_clock_4.setHidden(True)
 
-        self.Delete_clock_1.setIconSize(QSize(25, 25))
-        self.Delete_clock_2.setIconSize(QSize(25, 25))
-        self.Delete_clock_3.setIconSize(QSize(25, 25))
-        self.Delete_clock_4.setIconSize(QSize(25, 25))
+        self.Delete_clock_1.setIconSize(QSize(30, 30))
+        self.Delete_clock_2.setIconSize(QSize(30, 30))
+        self.Delete_clock_3.setIconSize(QSize(30, 30))
+        self.Delete_clock_4.setIconSize(QSize(30, 30))
 
         self.Settings_clock_1.setIconSize(QSize(25, 25))
         self.Settings_clock_2.setIconSize(QSize(25, 25))
@@ -295,6 +291,14 @@ class FirstWindow(QMainWindow):
                 self.draw_analog_clock(clock_hands_painter, clock)
                 clock_hands_painter.end()
                 self.clock_faces[clock.num].setPixmap(pixmap)
+            else:
+                pixmap = QPixmap('images/Numbers/SimpleBackground.png')
+                pixmap = pixmap.scaled(QSize(int(400 * self.coefficient_for_drawing),
+                                             int(400 * self.coefficient_for_drawing)))
+                clock_hands_painter.begin(pixmap)
+                self.draw_digit_clock(clock_hands_painter, clock)
+                clock_hands_painter.end()
+                self.clock_faces[clock.num].setPixmap(pixmap)
 
     def draw_analog_clock(self, clock_hands_painter, clock):
         clock_hands_painter.setPen(QPen(QColor(0, 0, 100), 4))
@@ -307,6 +311,41 @@ class FirstWindow(QMainWindow):
         clock_hands_painter.drawLine(int(200 * self.coefficient_for_drawing), int(200 * self.coefficient_for_drawing),
                                      clock.hours_pos_1, clock.hours_pos_2)
 
+    def draw_digit_clock(self, clock_hands_painter, clock):
+        time = clock.time
+        numbers = []
+        for part in time:
+            numbers.append(str(part).rjust(2, '0'))
+        numbers = ':'.join(numbers)
+        div = 0
+        for num, number in enumerate(numbers):
+            if num % 3 != 2:
+                pixmap = QPixmap(f'images/Numbers/Number_{number}.png')
+                pixmap.scaled(QSize(int(400 * self.coefficient_for_drawing / 7),
+                                    int(400 * self.coefficient_for_drawing)))
+                clock_hands_painter.drawPixmap(div,
+                                               0,
+                                               pixmap,
+                                               0,
+                                               0,
+                                               int(400 * self.coefficient_for_drawing / 7),
+                                               int(400 * self.coefficient_for_drawing))
+                div += int(400 * self.coefficient_for_drawing / 7)
+            else:
+                div -= int(400 * self.coefficient_for_drawing / 28)
+                pixmap = QPixmap('images/Numbers/NumberDoubleDot.png')
+                pixmap.scaled(
+                    QSize(int(400 * self.coefficient_for_drawing / 7),
+                          int(400 * self.coefficient_for_drawing)))
+                clock_hands_painter.drawPixmap(div,
+                                               0,
+                                               pixmap,
+                                               0,
+                                               0,
+                                               int(400 * self.coefficient_for_drawing / 7),
+                                               int(400 * self.coefficient_for_drawing))
+                div += int(400 * self.coefficient_for_drawing / 28)
+                div += int((400 * self.coefficient_for_drawing) / 14)
 
     def add_clock(self):
         self.name = self.sender().objectName()
