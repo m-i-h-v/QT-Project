@@ -57,15 +57,16 @@ class Clock:
         hours, minutes, seconds = self.time
 
         if self.detail_coefficient < 1:
-            self.seconds_pos_1 = 200 - int(130 * math.cos((90 + 6 * seconds) * math.pi / 180))
-            self.seconds_pos_2 = 200 - int(130 * math.sin((90 + 6 * seconds) * math.pi / 180))
+            self.seconds_pos_1 = int(200 * self.other.coefficient_for_drawing - 130  * self.other.coefficient_for_drawing * math.cos((90 + 6 * seconds) * math.pi / 180))
+            self.seconds_pos_2 = int(200 * self.other.coefficient_for_drawing - 130  * self.other.coefficient_for_drawing * math.sin((90 + 6 * seconds) * math.pi / 180))
         if self.detail_coefficient < 2:
-            self.minutes_pos_1 = 200 - int(110 * math.cos((90 + 6 * minutes) * math.pi / 180))
-            self.minutes_pos_2 = 200 - int(110 * math.sin((90 + 6 * minutes) * math.pi / 180))
-        self.hours_pos_1 = 200 - int(85 * math.cos((90 + 30 * hours + minutes / 2) * math.pi / 180))
-        self.hours_pos_2 = 200 - int(85 * math.sin((90 + 30 * hours + minutes / 2) * math.pi / 180))
+            self.minutes_pos_1 = int(200  * self.other.coefficient_for_drawing - 110  * self.other.coefficient_for_drawing * math.cos((90 + 6 * minutes) * math.pi / 180))
+            self.minutes_pos_2 = int(200 * self.other.coefficient_for_drawing - 110 * self.other.coefficient_for_drawing * math.sin((90 + 6 * minutes) * math.pi / 180))
+        self.hours_pos_1 = int(200 * self.other.coefficient_for_drawing - 85 * self.other.coefficient_for_drawing * math.cos((90 + 30 * hours + minutes / 2) * math.pi / 180))
+        self.hours_pos_2 = int(200 * self.other.coefficient_for_drawing - 85 * self.other.coefficient_for_drawing * math.sin((90 + 30 * hours + minutes / 2) * math.pi / 180))
 
     def update_digit(self):
+
         self.other.clock_faces[self.num].setText('digit ' + ':'.join(map(str, self.time)))
 
 
@@ -78,9 +79,12 @@ class AddClockNotEverythingIsSelected(Exception):
 
 
 class FirstWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self, desktop_size):
         super().__init__()
         uic.loadUi('Ui/MainWindowUi.ui', self)
+
+        self.screen_size = desktop_size.width(), desktop_size.height()
+        self.coefficient_for_drawing = (self.screen_size[0] // 4) / 400
 
 #        response = requests.get('https://www.timeanddate.com/worldclock/timezone/utc')
 #        soup = BeautifulSoup(response.text, 'html.parser')
@@ -268,6 +272,7 @@ class FirstWindow(QMainWindow):
                 if clock.detail_coefficient == 2:
                     name = 'images/ClockFace_3'
                 pixmap = QPixmap(name)
+                pixmap = pixmap.scaled(QSize(int(400 * self.coefficient_for_drawing), int(400 * self.coefficient_for_drawing)))
                 clock_hands_painter.begin(pixmap)
                 self.draw_analog_clock(clock_hands_painter, clock)
                 clock_hands_painter.end()
@@ -275,11 +280,11 @@ class FirstWindow(QMainWindow):
 
     def draw_analog_clock(self, clock_hands_painter, clock):
         clock_hands_painter.setPen(QPen(QColor(0, 0, 100), 4))
-        clock_hands_painter.drawLine(200, 200, clock.seconds_pos_1, clock.seconds_pos_2)
+        clock_hands_painter.drawLine(int(200 * self.coefficient_for_drawing), int(200 * self.coefficient_for_drawing), clock.seconds_pos_1, clock.seconds_pos_2)
         clock_hands_painter.setPen(QPen(QColor(0, 0, 100), 6))
-        clock_hands_painter.drawLine(200, 200, clock.minutes_pos_1, clock.minutes_pos_2)
+        clock_hands_painter.drawLine(int(200 * self.coefficient_for_drawing), int(200 * self.coefficient_for_drawing), clock.minutes_pos_1, clock.minutes_pos_2)
         clock_hands_painter.setPen(QPen(QColor(0, 0, 100), 8))
-        clock_hands_painter.drawLine(200, 200, clock.hours_pos_1, clock.hours_pos_2)
+        clock_hands_painter.drawLine(int(200 * self.coefficient_for_drawing), int(200 * self.coefficient_for_drawing), clock.hours_pos_1, clock.hours_pos_2)
 
 
     def add_clock(self):
@@ -665,6 +670,8 @@ class AlarmClockAlreadyExists(QWidget):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    ex = FirstWindow()
+    primary_screen = app.desktop().primaryScreen()
+    desktop_size = app.desktop().screenGeometry(primary_screen).size()
+    ex = FirstWindow(desktop_size)
     ex.showMaximized()
     sys.exit(app.exec())
