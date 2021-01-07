@@ -16,7 +16,7 @@ import datetime as dt
 
 
 class Clock:
-    def __init__(self, other, type, timezone, num, original_timezone, detail_coefficient=0, numbers=None, ):
+    def __init__(self, other, type, timezone, num, original_timezone, detail_coefficient=0, numbers=True, ):
         self.other, self.clock_type, self.timezone = other, type, timezone
         self.original_timezone = original_timezone
         self.detail_coefficient, self.num, self.numbers = detail_coefficient, num, numbers
@@ -25,16 +25,23 @@ class Clock:
         self.minutes_pos_1, self.minutes_pos_2 = 200, 200
         self.hours_pos_1, self.hours_pos_2 = 200, 200
         if self.clock_type == 'analog':
+            name = ''
             if self.detail_coefficient == 0:
-                self.pixmap = QPixmap('images/ClockFace_1.png')
+                name = 'images/ClockFace_1'
             elif self.detail_coefficient == 1:
-                self.pixmap = QPixmap('images/ClockFace_2.png')
+                name = 'images/ClockFace_2'
             else:
-                self.pixmap = QPixmap('images/ClockFace_3.png')
+                name = 'images/ClockFace_3'
+            if numbers:
+                name += '_nums'
+            name += '.png'
+            self.pixmap = QPixmap(name)
+            self.pixmap.scaled(QSize(int(400 * self.other.coefficient_for_drawing), int(400 * self.other.coefficient_for_drawing)))
             self.other.clock_faces[self.num].setPixmap(self.pixmap)
 
-    def add_changes(self, new_type, new_timezone):
+    def add_changes(self, new_type, new_timezone, detail_coefficient, numbers):
         self.clock_type = new_type
+        self.detail_coefficient, self.numbers = detail_coefficient, numbers
         self.paint_is_allowed = False if new_type == 'digit' else True
         self.original_timezone = new_timezone
         sign = new_timezone[3]
@@ -56,12 +63,10 @@ class Clock:
         self.clock_face_cord_x, self.clock_face_coord_y = clock_face_coordinates.x(), clock_face_coordinates.y()
         hours, minutes, seconds = self.time
 
-        if self.detail_coefficient < 1:
-            self.seconds_pos_1 = int(200 * self.other.coefficient_for_drawing - 130  * self.other.coefficient_for_drawing * math.cos((90 + 6 * seconds) * math.pi / 180))
-            self.seconds_pos_2 = int(200 * self.other.coefficient_for_drawing - 130  * self.other.coefficient_for_drawing * math.sin((90 + 6 * seconds) * math.pi / 180))
-        if self.detail_coefficient < 2:
-            self.minutes_pos_1 = int(200  * self.other.coefficient_for_drawing - 110  * self.other.coefficient_for_drawing * math.cos((90 + 6 * minutes) * math.pi / 180))
-            self.minutes_pos_2 = int(200 * self.other.coefficient_for_drawing - 110 * self.other.coefficient_for_drawing * math.sin((90 + 6 * minutes) * math.pi / 180))
+        self.seconds_pos_1 = int(200 * self.other.coefficient_for_drawing - 130  * self.other.coefficient_for_drawing * math.cos((90 + 6 * seconds) * math.pi / 180))
+        self.seconds_pos_2 = int(200 * self.other.coefficient_for_drawing - 130  * self.other.coefficient_for_drawing * math.sin((90 + 6 * seconds) * math.pi / 180))
+        self.minutes_pos_1 = int(200  * self.other.coefficient_for_drawing - 110  * self.other.coefficient_for_drawing * math.cos((90 + 6 * minutes) * math.pi / 180))
+        self.minutes_pos_2 = int(200 * self.other.coefficient_for_drawing - 110 * self.other.coefficient_for_drawing * math.sin((90 + 6 * minutes) * math.pi / 180))
         self.hours_pos_1 = int(200 * self.other.coefficient_for_drawing - 85 * self.other.coefficient_for_drawing * math.cos((90 + 30 * hours + minutes / 2) * math.pi / 180))
         self.hours_pos_2 = int(200 * self.other.coefficient_for_drawing - 85 * self.other.coefficient_for_drawing * math.sin((90 + 30 * hours + minutes / 2) * math.pi / 180))
 
@@ -84,21 +89,13 @@ class FirstWindow(QMainWindow):
         uic.loadUi('Ui/MainWindowUi.ui', self)
 
         self.screen_size = desktop_size.width(), desktop_size.height()
-        self.coefficient_for_drawing = (self.screen_size[0] // 4) / 400
+        self.coefficient_for_drawing = (self.screen_size[0] // 4) / 480
 
 #        response = requests.get('https://www.timeanddate.com/worldclock/timezone/utc')
 #        soup = BeautifulSoup(response.text, 'html.parser')
 #        time = map(int, str(soup.find("span", class_="h1", id="ct")).split('>')[1].split('<')[0].split(':'))
 #        self.current_time = list(time)
         self.current_time = [0, 0, 0]
-
-        self.analog_clock_face_1 = QPixmap('images/ClockFace_1.png')
-        self.analog_clock_face_2 = QPixmap('images/ClockFace_2.png')
-        self.analog_clock_face_3 = QPixmap('images/ClockFace_3.png')
-
-        self.analog_clock_faces = [self.analog_clock_face_1,
-                                   self.analog_clock_face_2,
-                                   self.analog_clock_face_3]
 
         self.alarm_clock_button.clicked.connect(self.alarm_clocks)
 
@@ -164,6 +161,11 @@ class FirstWindow(QMainWindow):
         self.Settings_clock_2.setIcon(QtGui.QIcon('images/SettingsButton.png'))
         self.Settings_clock_3.setIcon(QtGui.QIcon('images/SettingsButton.png'))
         self.Settings_clock_4.setIcon(QtGui.QIcon('images/SettingsButton.png'))
+
+        self.Delete_clock_1.setIcon(QtGui.QIcon('images/TrashBin.png'))
+        self.Delete_clock_2.setIcon(QtGui.QIcon('images/TrashBin.png'))
+        self.Delete_clock_3.setIcon(QtGui.QIcon('images/TrashBin.png'))
+        self.Delete_clock_4.setIcon(QtGui.QIcon('images/TrashBin.png'))
 
         self.Settings_clock_1.setHidden(True)
         self.Settings_clock_2.setHidden(True)
@@ -267,10 +269,13 @@ class FirstWindow(QMainWindow):
             if clock.clock_type == 'analog':
                 if clock.detail_coefficient == 0:
                     name = 'images/ClockFace_1'
-                if clock.detail_coefficient == 1:
+                elif clock.detail_coefficient == 1:
                     name = 'images/ClockFace_2'
-                if clock.detail_coefficient == 2:
+                elif clock.detail_coefficient == 2:
                     name = 'images/ClockFace_3'
+                if clock.numbers:
+                    name += '_nums'
+                name += '.png'
                 pixmap = QPixmap(name)
                 pixmap = pixmap.scaled(QSize(int(400 * self.coefficient_for_drawing), int(400 * self.coefficient_for_drawing)))
                 clock_hands_painter.begin(pixmap)
@@ -337,6 +342,30 @@ class AddClock(QWidget):
 
         self.setWindowModality(Qt.ApplicationModal)
 
+        self.NumbersAreNeededCheckBox.setChecked(True)
+        self.NumbersAreNeededCheckBox.setHidden(True)
+
+        self.pixmap_1 = QPixmap('images/ClockFace_1.png')
+        self.pixmap_2 = QPixmap('images/ClockFace_2.png')
+        self.pixmap_3 = QPixmap('images/ClockFace_3.png')
+        self.pixmap_1.scaled(QSize(300, 300))
+        self.pixmap_2.scaled(QSize(300, 300))
+        self.pixmap_3.scaled(QSize(300, 300))
+        self.ClockFaceLabel_1.setPixmap(self.pixmap_1)
+        self.ClockFaceLabel_2.setPixmap(self.pixmap_2)
+        self.ClockFaceLabel_3.setPixmap(self.pixmap_3)
+        self.ClockFaceLabel_1.setHidden(True)
+        self.ClockFaceLabel_2.setHidden(True)
+        self.ClockFaceLabel_3.setHidden(True)
+        self.CoefficientRadioButton_1.setHidden(True)
+        self.CoefficientRadioButton_2.setHidden(True)
+        self.CoefficientRadioButton_3.setHidden(True)
+
+        self.AnalogRadioButton.clicked.connect(self.change_variants)
+        self.DigitRadioButton.clicked.connect(self.change_variants)
+
+        self.CoefficientRadioButton_1.setChecked(True)
+
         self.Label_1.setHidden(True)
         self.Label_2.setHidden(True)
 
@@ -373,10 +402,34 @@ class AddClock(QWidget):
                 self.other.clock_faces[self.other.name[-1]].setHidden(False)
                 self.other.settings_clock_buttons[self.other.name[-1]].setHidden(False)
                 self.other.delete_clock_buttons[self.other.name[-1]].setHidden(False)
-                self.other.clocks[int(num) - 1] = Clock(self.other, clock_type, timezone, num, original_timezone)
+                if self.CoefficientRadioButton_1.isChecked():
+                    coefficient = 0
+                elif self.CoefficientRadioButton_2.isChecked():
+                    coefficient = 1
+                else:
+                    coefficient = 2
+                self.other.clocks[int(num) - 1] = Clock(self.other, clock_type, timezone, num, original_timezone, coefficient, self.NumbersAreNeededCheckBox.isChecked())
                 self.close()
         except AddClockNotEverythingIsSelected:
             pass
+
+    def change_variants(self):
+        if self.sender().objectName()[0] == 'A':
+            self.ClockFaceLabel_1.setHidden(False)
+            self.ClockFaceLabel_2.setHidden(False)
+            self.ClockFaceLabel_3.setHidden(False)
+            self.CoefficientRadioButton_1.setHidden(False)
+            self.CoefficientRadioButton_2.setHidden(False)
+            self.CoefficientRadioButton_3.setHidden(False)
+            self.NumbersAreNeededCheckBox.setHidden(False)
+        else:
+            self.ClockFaceLabel_1.setHidden(True)
+            self.ClockFaceLabel_2.setHidden(True)
+            self.ClockFaceLabel_3.setHidden(True)
+            self.CoefficientRadioButton_1.setHidden(True)
+            self.CoefficientRadioButton_2.setHidden(True)
+            self.CoefficientRadioButton_3.setHidden(True)
+            self.NumbersAreNeededCheckBox.setHidden(True)
 
     def cancel(self):
         self.close()
@@ -477,10 +530,40 @@ class ClockSettings(QWidget):
 
         self.setWindowModality(Qt.ApplicationModal)
 
+        self.pixmap_1 = QPixmap('images/ClockFace_1.png')
+        self.pixmap_2 = QPixmap('images/ClockFace_2.png')
+        self.pixmap_3 = QPixmap('images/ClockFace_3.png')
+        self.pixmap_1.scaled(QSize(300, 300))
+        self.pixmap_2.scaled(QSize(300, 300))
+        self.pixmap_3.scaled(QSize(300, 300))
+        self.ClockFaceLabel_1.setPixmap(self.pixmap_1)
+        self.ClockFaceLabel_2.setPixmap(self.pixmap_2)
+        self.ClockFaceLabel_3.setPixmap(self.pixmap_3)
+
+        if other.clocks[num - 1].detail_coefficient == 0:
+            self.CoefficientRadioButton_1.setChecked(True)
+        elif other.clocks[num - 1].detail_coefficient == 1:
+            self.CoefficientRadioButton_2.setChecked(True)
+        else:
+            self.CoefficientRadioButton_3.setChecked(True)
+
+        if other.clocks[num - 1].numbers:
+            self.NumbersAreNeededCheckBox.setChecked(True)
+
+        self.AnalogRadioButton.clicked.connect(self.change_variants)
+        self.DigitRadioButton.clicked.connect(self.change_variants)
+
         if other.clocks[num - 1].clock_type == 'analog':
             self.AnalogRadioButton.setChecked(True)
         else:
+            self.CoefficientRadioButton_1.setHidden(True)
+            self.CoefficientRadioButton_2.setHidden(True)
+            self.CoefficientRadioButton_3.setHidden(True)
+            self.ClockFaceLabel_1.setHidden(True)
+            self.ClockFaceLabel_2.setHidden(True)
+            self.ClockFaceLabel_3.setHidden(True)
             self.DigitRadioButton.setChecked(True)
+            self.NumbersAreNeededCheckBox.setHidden(True)
 
         index = self.TimeZoneComboBox.findText(other.clocks[num - 1].original_timezone, Qt.MatchFixedString)
         self.TimeZoneComboBox.setCurrentIndex(index)
@@ -489,10 +572,34 @@ class ClockSettings(QWidget):
         self.OkButton.clicked.connect(self.apply_changes)
         self.other, self.num = other, num - 1
 
+    def change_variants(self):
+        if self.sender().objectName()[0] == 'A':
+            self.ClockFaceLabel_1.setHidden(False)
+            self.ClockFaceLabel_2.setHidden(False)
+            self.ClockFaceLabel_3.setHidden(False)
+            self.CoefficientRadioButton_1.setHidden(False)
+            self.CoefficientRadioButton_2.setHidden(False)
+            self.CoefficientRadioButton_3.setHidden(False)
+            self.NumbersAreNeededCheckBox.setHidden(False)
+        else:
+            self.ClockFaceLabel_1.setHidden(True)
+            self.ClockFaceLabel_2.setHidden(True)
+            self.ClockFaceLabel_3.setHidden(True)
+            self.CoefficientRadioButton_1.setHidden(True)
+            self.CoefficientRadioButton_2.setHidden(True)
+            self.CoefficientRadioButton_3.setHidden(True)
+            self.NumbersAreNeededCheckBox.setHidden(True)
+
     def apply_changes(self):
         type = 'analog' if self.AnalogRadioButton.isChecked() else 'digit'
         tz = self.TimeZoneComboBox.currentText()
-        self.other.clocks[self.num].add_changes(type, tz)
+        if self.CoefficientRadioButton_1.isChecked():
+            coefficient = 0
+        elif self.CoefficientRadioButton_2.isChecked():
+            coefficient = 1
+        else:
+            coefficient = 2
+        self.other.clocks[self.num].add_changes(type, tz, coefficient, self.NumbersAreNeededCheckBox.isChecked())
         self.close()
 
     def cancel(self):
