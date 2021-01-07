@@ -16,8 +16,9 @@ import datetime as dt
 
 
 class Clock:
-    def __init__(self, other, type, timezone, num, detail_coefficient=0, numbers=None):
+    def __init__(self, other, type, timezone, num, original_timezone, detail_coefficient=0, numbers=None, ):
         self.other, self.clock_type, self.timezone = other, type, timezone
+        self.original_timezone = original_timezone
         self.detail_coefficient, self.num, self.numbers = detail_coefficient, num, numbers
         self.paint_is_allowed = False if type == 'digit' else True
         self.seconds_pos_1, self.seconds_pos_2 = 200, 200
@@ -35,6 +36,7 @@ class Clock:
     def add_changes(self, new_type, new_timezone):
         self.clock_type = new_type
         self.paint_is_allowed = False if new_type == 'digit' else True
+        self.original_timezone = new_timezone
         sign = new_timezone[3]
         timezone = new_timezone[3:].split(':')
         self.timezone = [int(timezone[0]), 0 if len(timezone) == 1 else int(sign + timezone[1])]
@@ -356,6 +358,7 @@ class AddClock(QWidget):
             if self.is_ok():
                 clock_type = 'analog' if self.AnalogRadioButton.isChecked() else 'digit'
                 sign = self.TimeZoneComboBox.currentText()[3]
+                original_timezone = self.TimeZoneComboBox.currentText()
                 timezone = self.TimeZoneComboBox.currentText()[3:].split(':')
                 timezone = [int(timezone[0]), 0 if len(timezone) == 1 else int(sign + timezone[1])]
                 self.other.clock_layouts[num].replaceWidget(
@@ -365,7 +368,7 @@ class AddClock(QWidget):
                 self.other.clock_faces[self.other.name[-1]].setHidden(False)
                 self.other.settings_clock_buttons[self.other.name[-1]].setHidden(False)
                 self.other.delete_clock_buttons[self.other.name[-1]].setHidden(False)
-                self.other.clocks[int(num) - 1] = Clock(self.other, clock_type, timezone, num=num)
+                self.other.clocks[int(num) - 1] = Clock(self.other, clock_type, timezone, num, original_timezone)
                 self.close()
         except AddClockNotEverythingIsSelected:
             pass
@@ -468,6 +471,14 @@ class ClockSettings(QWidget):
         uic.loadUi('Ui/ClockSettingsUi.ui', self)
 
         self.setWindowModality(Qt.ApplicationModal)
+
+        if other.clocks[num - 1].clock_type == 'analog':
+            self.AnalogRadioButton.setChecked(True)
+        else:
+            self.DigitRadioButton.setChecked(True)
+
+        index = self.TimeZoneComboBox.findText(other.clocks[num - 1].original_timezone, Qt.MatchFixedString)
+        self.TimeZoneComboBox.setCurrentIndex(index)
 
         self.CancelButton.clicked.connect(self.cancel)
         self.OkButton.clicked.connect(self.apply_changes)
