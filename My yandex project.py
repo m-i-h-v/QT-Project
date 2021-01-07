@@ -36,7 +36,8 @@ class Clock:
                 name += '_nums'
             name += '.png'
             self.pixmap = QPixmap(name)
-            self.pixmap.scaled(QSize(int(400 * self.other.coefficient_for_drawing), int(400 * self.other.coefficient_for_drawing)))
+            self.pixmap.scaled(QSize(int(400 * self.other.coefficient_for_drawing),
+                                     int(400 * self.other.coefficient_for_drawing)))
             self.other.clock_faces[self.num].setPixmap(self.pixmap)
 
     def add_changes(self, new_type, new_timezone, detail_coefficient, numbers):
@@ -63,12 +64,23 @@ class Clock:
         self.clock_face_cord_x, self.clock_face_coord_y = clock_face_coordinates.x(), clock_face_coordinates.y()
         hours, minutes, seconds = self.time
 
-        self.seconds_pos_1 = int(200 * self.other.coefficient_for_drawing - 130  * self.other.coefficient_for_drawing * math.cos((90 + 6 * seconds) * math.pi / 180))
-        self.seconds_pos_2 = int(200 * self.other.coefficient_for_drawing - 130  * self.other.coefficient_for_drawing * math.sin((90 + 6 * seconds) * math.pi / 180))
-        self.minutes_pos_1 = int(200  * self.other.coefficient_for_drawing - 110  * self.other.coefficient_for_drawing * math.cos((90 + 6 * minutes) * math.pi / 180))
-        self.minutes_pos_2 = int(200 * self.other.coefficient_for_drawing - 110 * self.other.coefficient_for_drawing * math.sin((90 + 6 * minutes) * math.pi / 180))
-        self.hours_pos_1 = int(200 * self.other.coefficient_for_drawing - 85 * self.other.coefficient_for_drawing * math.cos((90 + 30 * hours + minutes / 2) * math.pi / 180))
-        self.hours_pos_2 = int(200 * self.other.coefficient_for_drawing - 85 * self.other.coefficient_for_drawing * math.sin((90 + 30 * hours + minutes / 2) * math.pi / 180))
+        self.seconds_pos_1 = int(200 * self.other.coefficient_for_drawing - 130 *
+                                 self.other.coefficient_for_drawing * math.cos((90 + 6 * seconds) * math.pi / 180))
+
+        self.seconds_pos_2 = int(200 * self.other.coefficient_for_drawing - 130 *
+                                 self.other.coefficient_for_drawing * math.sin((90 + 6 * seconds) * math.pi / 180))
+
+        self.minutes_pos_1 = int(200 * self.other.coefficient_for_drawing - 110 *
+                                 self.other.coefficient_for_drawing * math.cos((90 + 6 * minutes) * math.pi / 180))
+
+        self.minutes_pos_2 = int(200 * self.other.coefficient_for_drawing - 110 *
+                                 self.other.coefficient_for_drawing * math.sin((90 + 6 * minutes) * math.pi / 180))
+
+        self.hours_pos_1 = int(200 * self.other.coefficient_for_drawing - 85 * self.other.coefficient_for_drawing *
+                               math.cos((90 + 30 * hours + minutes / 2) * math.pi / 180))
+
+        self.hours_pos_2 = int(200 * self.other.coefficient_for_drawing - 85 * self.other.coefficient_for_drawing *
+                               math.sin((90 + 30 * hours + minutes / 2) * math.pi / 180))
 
     def update_digit(self):
 
@@ -271,13 +283,14 @@ class FirstWindow(QMainWindow):
                     name = 'images/ClockFace_1'
                 elif clock.detail_coefficient == 1:
                     name = 'images/ClockFace_2'
-                elif clock.detail_coefficient == 2:
+                else:
                     name = 'images/ClockFace_3'
                 if clock.numbers:
                     name += '_nums'
                 name += '.png'
                 pixmap = QPixmap(name)
-                pixmap = pixmap.scaled(QSize(int(400 * self.coefficient_for_drawing), int(400 * self.coefficient_for_drawing)))
+                pixmap = pixmap.scaled(QSize(int(400 * self.coefficient_for_drawing),
+                                             int(400 * self.coefficient_for_drawing)))
                 clock_hands_painter.begin(pixmap)
                 self.draw_analog_clock(clock_hands_painter, clock)
                 clock_hands_painter.end()
@@ -285,11 +298,14 @@ class FirstWindow(QMainWindow):
 
     def draw_analog_clock(self, clock_hands_painter, clock):
         clock_hands_painter.setPen(QPen(QColor(0, 0, 100), 4))
-        clock_hands_painter.drawLine(int(200 * self.coefficient_for_drawing), int(200 * self.coefficient_for_drawing), clock.seconds_pos_1, clock.seconds_pos_2)
+        clock_hands_painter.drawLine(int(200 * self.coefficient_for_drawing), int(200 * self.coefficient_for_drawing),
+                                     clock.seconds_pos_1, clock.seconds_pos_2)
         clock_hands_painter.setPen(QPen(QColor(0, 0, 100), 6))
-        clock_hands_painter.drawLine(int(200 * self.coefficient_for_drawing), int(200 * self.coefficient_for_drawing), clock.minutes_pos_1, clock.minutes_pos_2)
+        clock_hands_painter.drawLine(int(200 * self.coefficient_for_drawing), int(200 * self.coefficient_for_drawing),
+                                     clock.minutes_pos_1, clock.minutes_pos_2)
         clock_hands_painter.setPen(QPen(QColor(0, 0, 100), 8))
-        clock_hands_painter.drawLine(int(200 * self.coefficient_for_drawing), int(200 * self.coefficient_for_drawing), clock.hours_pos_1, clock.hours_pos_2)
+        clock_hands_painter.drawLine(int(200 * self.coefficient_for_drawing), int(200 * self.coefficient_for_drawing),
+                                     clock.hours_pos_1, clock.hours_pos_2)
 
 
     def add_clock(self):
@@ -327,7 +343,6 @@ class FirstWindow(QMainWindow):
     def clock_settings(self):
         self.clock_settings_window = ClockSettings(self, int(self.sender().objectName()[-1]))
         self.clock_settings_window.show()
-
 
     def alarm_clocks(self):
         self.alarm_clocks_window = AlarmClocks(self)
@@ -408,7 +423,8 @@ class AddClock(QWidget):
                     coefficient = 1
                 else:
                     coefficient = 2
-                self.other.clocks[int(num) - 1] = Clock(self.other, clock_type, timezone, num, original_timezone, coefficient, self.NumbersAreNeededCheckBox.isChecked())
+                self.other.clocks[int(num) - 1] = Clock(self.other, clock_type, timezone, num, original_timezone,
+                                                        coefficient, self.NumbersAreNeededCheckBox.isChecked())
                 self.close()
         except AddClockNotEverythingIsSelected:
             pass
@@ -506,7 +522,6 @@ class AlarmClocks(QWidget):
                 self.TableWidget.setItem(num + 1, num_, item)
 
     def add_alarm_clock(self):
-        pass
         self.add_new_alarm_clock = AddNewAlarmClock(self)
         self.add_new_alarm_clock.show()
 
@@ -674,12 +689,12 @@ class AddNewAlarmClock(QWidget):
             if self.is_ok():
                 pass
                 self.check_boxes_help = [self.MondayCheckBox,
-                                          self.TuesdayCheckBox,
-                                          self.WednesdayCheckBox,
-                                          self.ThursdayCheckBox,
-                                          self.FridayCheckBox,
-                                          self.SaturdayCheckBox,
-                                          self.SundayCheckBox]
+                                         self.TuesdayCheckBox,
+                                         self.WednesdayCheckBox,
+                                         self.ThursdayCheckBox,
+                                         self.FridayCheckBox,
+                                         self.SaturdayCheckBox,
+                                         self.SundayCheckBox]
                 self.check_boxes = []
 
                 for check_box in self.check_boxes_help:
@@ -726,7 +741,6 @@ class AddNewAlarmClock(QWidget):
             self.setWindowModality(Qt.NonModal)
             self.alarm_clock_exists = AlarmClockAlreadyExists(self)
             self.alarm_clock_exists.show()
-
 
     def is_ok(self):
         if self.NameTextEdit.toPlainText() == '':
