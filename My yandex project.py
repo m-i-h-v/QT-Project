@@ -321,8 +321,8 @@ class FirstWindow(QMainWindow):
         for num, number in enumerate(numbers):
             if num % 3 != 2:
                 pixmap = QPixmap(f'images/Numbers/Number_{number}.png')
-                pixmap.scaled(QSize(int(400 * self.coefficient_for_drawing / 7),
-                                    int(400 * self.coefficient_for_drawing)))
+                pixmap = pixmap.scaled(QSize(int(400 * self.coefficient_for_drawing / 7),
+                                             int(400 * self.coefficient_for_drawing)))
                 clock_hands_painter.drawPixmap(div,
                                                0,
                                                pixmap,
@@ -334,9 +334,9 @@ class FirstWindow(QMainWindow):
             else:
                 div -= int(400 * self.coefficient_for_drawing / 28)
                 pixmap = QPixmap('images/Numbers/NumberDoubleDot.png')
-                pixmap.scaled(
-                    QSize(int(400 * self.coefficient_for_drawing / 7),
-                          int(400 * self.coefficient_for_drawing)))
+                pixmap = pixmap.scaled(
+                                       QSize(int(400 * self.coefficient_for_drawing / 7),
+                                             int(400 * self.coefficient_for_drawing)))
                 clock_hands_painter.drawPixmap(div,
                                                0,
                                                pixmap,
