@@ -565,7 +565,7 @@ class AlarmClocks(QWidget):
         self.add_new_alarm_clock.show()
 
     def change_alarm_clocks(self):
-        self.change_alarm_clock_window = ChangeAlarmClock()
+        self.change_alarm_clock_window = AlarmClockSettings(self, self.sender())
         self.change_alarm_clock_window.show()
 
     def delete_alarm_clocks(self):
@@ -667,10 +667,69 @@ class ClockSettings(QWidget):
             self.apply_changes()
 
 
-class ChangeAlarmClock(QWidget):
-    def __init__(self):
+class AlarmClockSettings(QWidget):
+    def __init__(self, other, sender):
         super().__init__()
-        uic.loadUi('Ui/ChangeAlarmClockUi.ui', self)
+        uic.loadUi('Ui/AlarmClockSettingsUi.ui', self)
+        self.other, self.sender = other, sender
+
+        name = sender.objectName()[12:].split(';')
+        self.name = name
+        self.alarm_clock = other.cursor.execute("""SELECT * from alarm_clocks
+                                              WHERE universal time = ?, timezone = ?""", (name[0], name[1])).fetchone()
+
+        repeat = self.alarm_clock[2].split(',')
+        self.check_boxes = {'пн': self.MondayCheckBox,
+                            'вт': self.TuesdayCheckBox,
+                            'ср': self.WednesdayCheckBox,
+                            'чт': self.ThursdayCheckBox,
+                            'пт': self.FridayCheckBox,
+                            'сб': self.SaturdayCheckBox,
+                            'вс': self.SundayCheckBox}
+
+        for repeat_day in repeat:
+            self.check_boxes[repeat_day].setChecked(True)
+
+        self.NameTextEdit.setPlainText(self.alarm_clock[0])
+        index = self.TimeZoneComboBox.findText(name[1], Qt.MatchFixedString)
+        self.TimezoneComboBox.setCurrentIndex(index)
+        self.HoursSpinBox.setValue(int(self.alarm_clock[1].split(':')[0]))
+        self.MinutesSpinBox.setValue(int(self.alarm_clock[1].split(':')[1]))
+
+        self.SaveButton.clicked.connect(self.apply_changes)
+        self.CancelButton.clicked.connect(self.cancel)
+
+    def cancel(self):
+        self.close()
+
+    def apply_changes(self):
+        num = self.other.data.index(self.alarm_clock)
+        name = self.NameTextEdit.toPlainText()
+        time = str(self.HoursSpinBox.value()).rjust(2, '0') + ':' + str(self.MinutesSpinBox.value()).rjust(2, '0')
+        repeat_days = []
+        for repeat_day in self.check_boxes.keys():
+            if self.check_boxes[repeat_day].isChecked():
+                repeat_days.append(repeat_day)
+        repeat_days = ', '.join(repeat_days)
+        timezone = self.TimezoneComboBox.currentText()
+        tz = timezone[3:]
+        sign = tz[0]
+        tz = tz.split(':')
+        tz[0] = int(tz[0])
+        tz[1] = 0 if len(tz) == 1 else int(sign + tz[1])
+        mode = 'Активен'
+        universal_time = []
+        universal_time.append((self.HoursSpinBox.value() + tz[0] + (self.MinutesSpinBox.value() + tz[1]) // 60) % 24)
+        universal_time.append((self.MinutesSpinBox.value() + tz[1]) % 60)
+        values = (name, time, repeat_days, timezone, mode, universal_time, self.name[1], self.name[0])
+        self.other.cursor.execute("UPDATE alarm_clocks"
+                                  "SET name = ?, time = ?, repeat = ?, timezone = ?, mode = ?, universal_time = ?"
+                                  "WHERE timezone = ? AND universal_time = ?", values)
+        self.other.connection.commit()
+        for i in range(5):
+            item = QTableWidgetItem(values[i])
+            item.setFlags(Qt.ItemIsEnabled)
+            self.other.TableWidget.setItem(num + 1, i, item)
 
 
 class DeleteDialog(QWidget):
@@ -726,7 +785,6 @@ class AddNewAlarmClock(QWidget):
     def add_alarm_clock(self):
         try:
             if self.is_ok():
-                pass
                 self.check_boxes_help = [self.MondayCheckBox,
                                          self.TuesdayCheckBox,
                                          self.WednesdayCheckBox,
