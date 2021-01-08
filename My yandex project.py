@@ -99,6 +99,12 @@ class FirstWindow(QMainWindow):
         self.screen_size = desktop_size.width(), desktop_size.height()
         self.coefficient_for_drawing = (self.screen_size[0] // 4) / 480
 
+        self.number_for_drawing_1 = int(200 * self.coefficient_for_drawing)
+        self.number_for_drawing_2 = int(400 * self.coefficient_for_drawing)
+        self.number_for_drawing_3 = int(400 * self.coefficient_for_drawing / 7)
+        self.number_for_drawing_4 = int(400 * self.coefficient_for_drawing / 14)
+        self.number_for_drawing_5 = int(400 * self.coefficient_for_drawing / 28)
+
 #        response = requests.get('https://www.timeanddate.com/worldclock/timezone/utc')
 #        soup = BeautifulSoup(response.text, 'html.parser')
 #        time = map(int, str(soup.find("span", class_="h1", id="ct")).split('>')[1].split('<')[0].split(':'))
