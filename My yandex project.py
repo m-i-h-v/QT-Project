@@ -292,8 +292,8 @@ class FirstWindow(QMainWindow):
                                           '9': QPixmap('images/Numbers/Number_9.png'),
                                           ':': QPixmap('images/Numbers/NumberDoubleDot.png')}
         for pixmap in self.pixmaps_for_drawing_digit.keys():
-            self.pixmaps_for_drawing_digit[pixmap].scaled(QSize(self.number_for_drawing_3,
-                                                                self.number_for_drawing_2))
+            self.pixmaps_for_drawing_digit[pixmap] = self.pixmaps_for_drawing_digit[pixmap].scaled(QSize(
+                self.number_for_drawing_3, self.number_for_drawing_2))
 
 
 
