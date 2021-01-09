@@ -295,10 +295,7 @@ class FirstWindow(QMainWindow):
             self.pixmaps_for_drawing_digit[pixmap] = self.pixmaps_for_drawing_digit[pixmap].scaled(QSize(
                 self.number_for_drawing_3, self.number_for_drawing_2))
 
-
-
         self.alarm_clock_check_time = [self.current_time[0], self.current_time[1]]
-
 
         self.connection = sqlite3.connect('database/alarm_clocks.sqlite')
         self.cursor = self.connection.cursor()
@@ -827,7 +824,8 @@ class AlarmClockSettings(QWidget):
                 self.other.TableWidget.cellWidget(num, 5).setObjectName(f'ChangeButton{universal_time};{timezone}')
                 self.other.TableWidget.cellWidget(num, 6).setObjectName(f'DeleteButton{universal_time};{timezone}')
                 self.other.data[num - 1] = (name, time, repeat_days, timezone, mode, universal_time)
-                self.other.other.alarm_clock_added(universal_time)
+                if time != self.alarm_clock[1]:
+                    self.other.other.alarm_clock_added(universal_time)
                 self.close()
         except AlarmClockAlreadyExistsException:
             self.setWindowModality(Qt.NonModal)
@@ -840,6 +838,13 @@ class AlarmClockSettings(QWidget):
         if len(data) == 0:
             return True
         raise AlarmClockAlreadyExistsException
+
+    def keyPressEvent(self, event):
+        key = event.key()
+        if key == Qt.Key_Escape:
+            self.close()
+        elif key == 16777220:
+            self.apply_changes()
 
 class DeleteDialog(QWidget):
     def __init__(self, other, data, name):
@@ -866,6 +871,13 @@ class DeleteDialog(QWidget):
 
     def cancel(self):
         self.close()
+
+    def keyPressEvent(self, event):
+        key = event.key()
+        if key == Qt.Key_Escape:
+            self.close()
+        elif key == 16777220:
+            self.confirm()
 
 
 class AddNewAlarmClock(QWidget):
@@ -968,6 +980,13 @@ class AddNewAlarmClock(QWidget):
             raise AlarmClockAlreadyExistsException(self)
         return True
 
+    def keyPressEvent(self, event):
+        key = event.key()
+        if key == Qt.Key_Escape:
+            self.close()
+        elif key == 16777220:
+            self.add_alarm_clock()
+
 
 class AddAlarmClockNotEverythingIsSelected(Exception):
     def __init__(self, other=None):
@@ -995,6 +1014,11 @@ class AlarmClockAlreadyExists(QWidget):
     def confirm(self):
         self.other.setWindowModality(Qt.ApplicationModal)
         self.close()
+
+    def keyPressEvent(self, event):
+        key = event.key()
+        if key == 16777220:
+            self.confirm()
 
 
 if __name__ == '__main__':
