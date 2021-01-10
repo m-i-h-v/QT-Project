@@ -16,6 +16,20 @@ from bs4 import BeautifulSoup
 import datetime as dt
 
 
+class AlarmClockPlaying(QWidget):
+    def __init__(self, name, time):
+        super().__init__()
+        uic.loadUi('Ui/AlarmClockPlayingUi.ui', self)
+
+        self.NameLabel.setPlainText(name)
+        self.CurrentTimeLabel.setPlainText(time)
+
+        self.StopButton.clicked.connect(self.stop_playing)
+
+    def stop_playing(self):
+        self.close()
+
+
 class Clock:
     def __init__(self, other, type, timezone, num, original_timezone, detail_coefficient=0, numbers=True, ):
         self.other, self.clock_type, self.timezone = other, type, timezone
@@ -342,10 +356,11 @@ class FirstWindow(QMainWindow):
 
     def play_alarm_clock(self):
         arguement = str(self.current_time[0]).rjust(2, '0') + ':' + str(self.current_time[1]).rjust(2, '0')
-        data = self.cursor.execute("""SELECT universal_time from alarm_clocks
+        data = self.cursor.execute("""SELECT name, time from alarm_clocks
                                       WHERE universal_time = ?""", (arguement,)).fetchall()
         if len(data) == 1:
-            print("it's time to play!")
+            self.alarm_clock_playing_widget = AlarmClockPlaying(data[0][0], data[0][1])
+            self.alarm_clock_playing_widget.show()
 
     def paintEvent(self, event):
         clock_hands_painter = QPainter()
