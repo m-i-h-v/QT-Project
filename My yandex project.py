@@ -3,9 +3,11 @@ import sqlite3
 import sys
 import urllib
 
+from pygame import mixer
 from PyQt5 import uic, QtGui
-from PyQt5.QtCore import QTimer, Qt, QEvent, QSize, QPoint, QLine
+from PyQt5.QtCore import QTimer, Qt, QEvent, QSize, QPoint, QLine, QFile, QIODevice
 from PyQt5.QtGui import QPixmap, QPainter, QColor, QPen
+from PyQt5.QtMultimedia import QAudioOutput, QAudioFormat, QSound
 from PyQt5.QtSql import QSqlDatabase, QSqlTableModel
 from PyQt5.QtWidgets import QWidget, QApplication, QAbstractButton, QMainWindow, QToolButton, QHBoxLayout, QGridLayout, \
     QScrollArea, QVBoxLayout, QTableWidgetItem, QTableWidget, QHeaderView, QInputDialog
@@ -16,18 +18,83 @@ from bs4 import BeautifulSoup
 import datetime as dt
 
 
+mixer.init()
+
+
 class AlarmClockPlaying(QWidget):
-    def __init__(self, name, time):
+    def __init__(self, name, time, other):
         super().__init__()
         uic.loadUi('Ui/AlarmClockPlayingUi.ui', self)
+        self.time, self.other = time, other
 
-        self.NameLabel.setPlainText(name)
-        self.CurrentTimeLabel.setPlainText(time)
+        self.setWindowModality(Qt.ApplicationModal)
+
+        self.pixmap = QPixmap('images/Numbers/SimpleBackground.png')
+        self.pixmap = self.pixmap.scaled(QSize(int(400 * other.coefficient_for_drawing * 6 / 7),
+                                               int(400 * other.coefficient_for_drawing)))
+        self.play = True
+
+        self.NameLabel.setText(name)
+        self.repaint()
+
+        self.timer = QTimer()
+        self.timer.singleShot(22000, self.stop_playing)
+
+        self.play_timer = QTimer()
+        self.play_timer.singleShot(11000, self.play_again)
+
+        mixer.music.play()
 
         self.StopButton.clicked.connect(self.stop_playing)
 
+    def paintEvent(self, event):
+        clock_hands_painter = QPainter()
+        clock_hands_painter.begin(self.pixmap)
+        self.draw_current_time(clock_hands_painter)
+        clock_hands_painter.end()
+        self.CurrentTimeLabel.setPixmap(self.pixmap)
+
+    def draw_current_time(self, clock_hands_painter):
+        div = 0
+        for num, number in enumerate(self.time):
+            if num % 3 != 2:
+                pixmap = self.other.pixmaps_for_drawing_digit[number]
+                clock_hands_painter.drawPixmap(div,
+                                               0,
+                                               pixmap,
+                                               0,
+                                               0,
+                                               self.other.number_for_drawing_3,
+                                               self.other.number_for_drawing_2)
+                div += int(400 * self.other.coefficient_for_drawing / 5)
+            else:
+                div -= self.other.number_for_drawing_5
+                pixmap = self.other.pixmaps_for_drawing_digit[number]
+                clock_hands_painter.drawPixmap(div,
+                                               0,
+                                               pixmap,
+                                               0,
+                                               0,
+                                               self.other.number_for_drawing_3,
+                                               self.other.number_for_drawing_2)
+                div += self.other.number_for_drawing_5
+                div += self.other.number_for_drawing_4
+
     def stop_playing(self):
+        self.play = False
+        mixer.music.stop()
         self.close()
+
+    def play_again(self):
+        if self.play:
+            mixer.music.play()
+
+    def keyPressEvent(self, event):
+        key = event.key()
+        if key == Qt.Key_Escape:
+            self.stop_playing()
+        elif key == 16777220:
+            self.stop_playing()
 
 
 class Clock:
@@ -116,6 +183,8 @@ class FirstWindow(QMainWindow):
     def __init__(self, desktop_size):
         super().__init__()
         uic.loadUi('Ui/MainWindowUi.ui', self)
+
+        mixer.music.load('AlarmClockSound.mp3')
 
         self.screen_size = desktop_size.width(), desktop_size.height()
         self.coefficient_for_drawing = (self.screen_size[0] // 4) / 480
@@ -309,8 +378,6 @@ class FirstWindow(QMainWindow):
             self.pixmaps_for_drawing_digit[pixmap] = self.pixmaps_for_drawing_digit[pixmap].scaled(QSize(
                 self.number_for_drawing_3, self.number_for_drawing_2))
 
-        self.alarm_clock_check_time = [self.current_time[0], self.current_time[1]]
-
         self.connection = sqlite3.connect('database/alarm_clocks.sqlite')
         self.cursor = self.connection.cursor()
 
@@ -338,7 +405,7 @@ class FirstWindow(QMainWindow):
             pass
 
     def alarm_clocks_check(self):
-        time = self.alarm_clock_check_time
+        time = self.current_time[0], self.current_time[1]
         for i in range(10):
             time_1 = str((time[0] + (time[1] + i) // 60) % 24).rjust(2, '0')
             time_2 = str((time[1] + i) % 60).rjust(2, '0')
@@ -352,14 +419,17 @@ class FirstWindow(QMainWindow):
                 else:
                     check_time = alarm_clock_time[1] - time[1] + 60
                 timer = QTimer()
-                timer.singleShot(check_time * 60000, self.play_alarm_clock)
+                if check_time != 0:
+                    timer.singleShot(check_time * 60000 - (self.current_time[2] - 3) * 1000, self.play_alarm_clock)
+                else:
+                    timer.singleShot(check_time * 60000, self.play_alarm_clock)
 
     def play_alarm_clock(self):
         arguement = str(self.current_time[0]).rjust(2, '0') + ':' + str(self.current_time[1]).rjust(2, '0')
         data = self.cursor.execute("""SELECT name, time from alarm_clocks
                                       WHERE universal_time = ?""", (arguement,)).fetchall()
         if len(data) == 1:
-            self.alarm_clock_playing_widget = AlarmClockPlaying(data[0][0], data[0][1])
+            self.alarm_clock_playing_widget = AlarmClockPlaying(data[0][0], data[0][1], self)
             self.alarm_clock_playing_widget.show()
 
     def paintEvent(self, event):
@@ -480,10 +550,13 @@ class FirstWindow(QMainWindow):
         if difference[0] == 1 and difference[1] + 60 <= 9:
             if difference[1] + 60 <= 9:
                 timer = QTimer()
-                timer.singleShot((difference[1] + 60) * 60000, self.play_alarm_clock)
+                timer.singleShot((difference[1] + 60) * 60000 - (self.current_time[2] - 3) * 1000, self.play_alarm_clock)
         elif difference[0] == 0 and difference[1] <= 9 and difference[1] >= 0:
             timer = QTimer()
-            timer.singleShot(difference[1] * 60000, self.play_alarm_clock)
+            if difference[1] != 0:
+                timer.singleShot(difference[1] * 60000 - (self.current_time[2] - 3) * 1000, self.play_alarm_clock)
+            else:
+                timer.singleShot(difference[1] * 60000, self.play_alarm_clock)
 
 
 class AddClock(QWidget):
@@ -784,10 +857,10 @@ class AlarmClockSettings(QWidget):
                             'пт': self.FridayCheckBox,
                             'сб': self.SaturdayCheckBox,
                             'вс': self.SundayCheckBox,
-                            'нет': None}
+                            'Нет': None}
 
         for repeat_day in repeat:
-            if repeat_day is not None:
+            if self.check_boxes[repeat_day] is not None:
                 self.check_boxes[repeat_day].setChecked(True)
 
         self.NameTextEdit.setPlainText(self.alarm_clock[0])
@@ -810,14 +883,18 @@ class AlarmClockSettings(QWidget):
         time = str(self.HoursSpinBox.value()).rjust(2, '0') + ':' + str(self.MinutesSpinBox.value()).rjust(2, '0')
         repeat_days = []
         for repeat_day in self.check_boxes.keys():
-            if self.check_boxes[repeat_day].isChecked():
-                repeat_days.append(repeat_day)
-        repeat_days = ', '.join(repeat_days)
+            if repeat_day != 'Нет':
+                if self.check_boxes[repeat_day].isChecked():
+                    repeat_days.append(repeat_day)
+        if len(repeat_days) != 0:
+             repeat_days = ', '.join(repeat_days)
+        else:
+            repeat_days = 'Нет'
         timezone = self.TimezoneComboBox.currentText()
         sign = '-' if timezone[3:][0] == '+' else '+'
-        time_zone = timezone[3:].split(':')
+        time_zone = timezone[4:].split(':')
         tz = [0, 0]
-        tz[0] = int(time_zone[0])
+        tz[0] = int(sign + time_zone[0])
         tz[1] = 0 if len(time_zone) == 1 else int(sign + time_zone[1])
         mode = 'Активен'
         universal_time = list()
@@ -849,8 +926,8 @@ class AlarmClockSettings(QWidget):
 
     def is_ok(self, time):
         data = self.other.cursor.execute("""SELECT * from alarm_clocks
-                                            WHERE universal_time = ?""", (time,)).fethcall()
-        if len(data) == 0:
+                                            WHERE universal_time = ?""", (time,)).fetchall()
+        if len(data) == 0 or time == self.alarm_clock[5]:
             return True
         raise AlarmClockAlreadyExistsException
 
@@ -1012,10 +1089,11 @@ class AddAlarmClockNotEverythingIsSelected(Exception):
 
 
 class AlarmClockAlreadyExistsException(Exception):
-    def __init__(self, other):
+    def __init__(self, other=None):
         super().__init__()
-        other.AttentionLabel_1.setHidden(True)
-        other.AttentionLabel_2.setHidden(True)
+        if other is not None:
+            other.AttentionLabel_1.setHidden(True)
+            other.AttentionLabel_2.setHidden(True)
 
 
 class AlarmClockAlreadyExists(QWidget):
