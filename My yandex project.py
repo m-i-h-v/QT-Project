@@ -846,7 +846,8 @@ class AlarmClockSettings(QWidget):
         name = sender.objectName()[12:].split(';')
         self.name = name
         self.alarm_clock = other.cursor.execute("""SELECT * from alarm_clocks
-                                                   WHERE universal_time = ? AND timezone = ?""", (name[0], name[1])).fetchone()
+                                                   WHERE universal_time = ? AND timezone = ?""", (name[0],
+                                                                                                  name[1])).fetchone()
 
         repeat = self.alarm_clock[2].split(', ')
         self.check_boxes = {'пн': self.MondayCheckBox,
@@ -886,7 +887,7 @@ class AlarmClockSettings(QWidget):
                 if self.check_boxes[repeat_day].isChecked():
                     repeat_days.append(repeat_day)
         if len(repeat_days) != 0:
-             repeat_days = ', '.join(repeat_days)
+            repeat_days = ', '.join(repeat_days)
         else:
             repeat_days = 'Нет'
         timezone = self.TimezoneComboBox.currentText()
@@ -936,6 +937,7 @@ class AlarmClockSettings(QWidget):
             self.close()
         elif key == 16777220:
             self.apply_changes()
+
 
 class DeleteDialog(QWidget):
     def __init__(self, other, data, name):
