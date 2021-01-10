@@ -23,6 +23,8 @@ class AlarmClockPlaying(QWidget):
         uic.loadUi('Ui/AlarmClockPlayingUi.ui', self)
         self.time, self.other = time, other
 
+        self.setWindowFlags(Qt.CustomizeWindowHint)
+
         self.setWindowModality(Qt.ApplicationModal)
 
         self.pixmap = QPixmap('images/Numbers/SimpleBackground.png')
