@@ -184,7 +184,7 @@ class FirstWindow(QMainWindow):
         super().__init__()
         uic.loadUi('Ui/MainWindowUi.ui', self)
 
-        mixer.music.load('AlarmClockSound.mp3')
+        mixer.music.load('sounds/AlarmClockSound.mp3')
 
         self.screen_size = desktop_size.width(), desktop_size.height()
         self.coefficient_for_drawing = (self.screen_size[0] // 4) / 480
