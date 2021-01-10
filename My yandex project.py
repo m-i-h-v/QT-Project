@@ -14,6 +14,7 @@ from PyQt5.uic.properties import QtCore, QtWidgets
 from bs4 import BeautifulSoup
 
 
+NAME = 'Циферблаты и будильники'
 mixer.init()
 
 
@@ -181,6 +182,7 @@ class FirstWindow(QMainWindow):
     def __init__(self, desktop_size):
         super().__init__()
         uic.loadUi('Ui/MainWindowUi.ui', self)
+        self.setWindowTitle(NAME)
 
         mixer.music.load('sounds/AlarmClockSound.mp3')
 
@@ -562,6 +564,7 @@ class AddClock(QWidget):
     def __init__(self, other):
         super().__init__()
         uic.loadUi('Ui/AddClock.ui', self)
+        self.setWindowTitle(NAME)
         self.other = other
 
         self.setWindowModality(Qt.ApplicationModal)
@@ -665,6 +668,7 @@ class ClockSettings(QWidget):
         super().__init__()
         uic.loadUi('Ui/ClockSettingsUi.ui', self)
 
+        self.setWindowTitle(NAME)
         self.setWindowModality(Qt.ApplicationModal)
 
         self.pixmap_1 = QPixmap('images/ClockFace_1.png')
@@ -768,6 +772,7 @@ class AlarmClocks(QWidget):
         super().__init__()
         self.other = other
         uic.loadUi('Ui/AlarmClocksUi.ui', self)
+        self.setWindowTitle(NAME)
 
         self.connection = sqlite3.connect('database/alarm_clocks.sqlite')
         self.cursor = self.connection.cursor()
@@ -841,6 +846,7 @@ class AddNewAlarmClock(QWidget):
     def __init__(self, other):
         super().__init__()
         uic.loadUi('Ui/AddNewAlarmClockUi.ui', self)
+        self.setWindowTitle(NAME)
         self.setWindowModality(Qt.ApplicationModal)
         self.other = other
         self.week_days = {'MondayCheckBox': 'пн',
@@ -949,6 +955,7 @@ class AlarmClockSettings(QWidget):
     def __init__(self, other, sender):
         super().__init__()
         uic.loadUi('Ui/AlarmClockSettingsUi.ui', self)
+        self.setWindowTitle(NAME)
         self.other, self.sender = other, sender
 
         name = sender.objectName()[12:].split(';')
@@ -1051,6 +1058,7 @@ class DeleteDialog(QWidget):
     def __init__(self, other, data, name):
         super().__init__()
         uic.loadUi('Ui/DeleteDialogUi.ui', self)
+        self.setWindowTitle(NAME)
         self.setWindowModality(Qt.ApplicationModal)
 
         self.other, self.data, self.name = other, data, name
@@ -1101,6 +1109,7 @@ class AlarmClockAlreadyExists(QWidget):
     def __init__(self, other):
         super().__init__()
         uic.loadUi('Ui/AlarmClockExistsUi.ui', self)
+        self.setWindowTitle(NAME)
         self.other = other
         self.setWindowModality(Qt.ApplicationModal)
         self.OkButton.clicked.connect(self.confirm)
