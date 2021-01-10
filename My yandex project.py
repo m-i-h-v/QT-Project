@@ -1,21 +1,17 @@
 import math
 import sqlite3
 import sys
-import urllib
 
 from pygame import mixer
 from PyQt5 import uic, QtGui
-from PyQt5.QtCore import QTimer, Qt, QEvent, QSize, QPoint, QLine, QFile, QIODevice
+from PyQt5.QtCore import QTimer, Qt, QSize
 from PyQt5.QtGui import QPixmap, QPainter, QColor, QPen
-from PyQt5.QtMultimedia import QAudioOutput, QAudioFormat, QSound
-from PyQt5.QtSql import QSqlDatabase, QSqlTableModel
 from PyQt5.QtWidgets import QWidget, QApplication, QAbstractButton, QMainWindow, QToolButton, QHBoxLayout, QGridLayout, \
     QScrollArea, QVBoxLayout, QTableWidgetItem, QTableWidget, QHeaderView, QInputDialog
 from PyQt5.QtWidgets import QLineEdit, QCheckBox, QLabel, QPushButton, QPlainTextEdit
 import requests
 from PyQt5.uic.properties import QtCore, QtWidgets
 from bs4 import BeautifulSoup
-import datetime as dt
 
 
 mixer.init()
@@ -550,8 +546,9 @@ class FirstWindow(QMainWindow):
         if difference[0] == 1 and difference[1] + 60 <= 9:
             if difference[1] + 60 <= 9:
                 timer = QTimer()
-                timer.singleShot((difference[1] + 60) * 60000 - (self.current_time[2] - 3) * 1000, self.play_alarm_clock)
-        elif difference[0] == 0 and difference[1] <= 9 and difference[1] >= 0:
+                timer.singleShot((difference[1] + 60) * 60000 - (self.current_time[2] - 3) * 1000,
+                                 self.play_alarm_clock)
+        elif difference[0] % 24 == 0 and difference[1] in range(10):
             timer = QTimer()
             if difference[1] != 0:
                 timer.singleShot(difference[1] * 60000 - (self.current_time[2] - 3) * 1000, self.play_alarm_clock)
@@ -758,9 +755,9 @@ class ClockSettings(QWidget):
         self.pixmap_1 = QPixmap('images/ClockFace_1.png')
         self.pixmap_2 = QPixmap('images/ClockFace_2.png')
         self.pixmap_3 = QPixmap('images/ClockFace_3.png')
-        self.pixmap_1.scaled(QSize(self.other.coefficient_for_drawing_2, self.other.coefficient_for_drawing_2))
-        self.pixmap_2.scaled(QSize(self.other.coefficient_for_drawing_2, self.other.coefficient_for_drawing_2))
-        self.pixmap_3.scaled(QSize(self.other.coefficient_for_drawing_2, self.other.coefficient_for_drawing_2))
+        self.pixmap_1.scaled(QSize(other.number_for_drawing_2, other.number_for_drawing_2))
+        self.pixmap_2.scaled(QSize(other.number_for_drawing_2, other.number_for_drawing_2))
+        self.pixmap_3.scaled(QSize(other.number_for_drawing_2, other.number_for_drawing_2))
         self.ClockFaceLabel_1.setPixmap(self.pixmap_1)
         self.ClockFaceLabel_2.setPixmap(self.pixmap_2)
         self.ClockFaceLabel_3.setPixmap(self.pixmap_3)
